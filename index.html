@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SanguKu — Atur Keuangan Pribadi Tanpa Ribet | LuarDigital</title>
+<meta name="description" content="Aplikasi & template pencatat keuangan pribadi. Catat pengeluaran harian, lihat laporan bulanan otomatis, dan dapat saran keuangan. Dari LuarDigital.">
+<style>
+  :root{
+    --bg:#0d0f14;--bg2:#141823;--card:#181d2a;--line:#272d3d;
+    --txt:#e8ebf2;--muted:#9aa3b8;--gold:#e6c068;--gold2:#c89b3f;--green:#4ade80}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  .btn{display:inline-block;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;
+    font-weight:700;padding:15px 30px;border-radius:14px;font-size:16px;border:none;cursor:pointer;
+    box-shadow:0 8px 24px rgba(230,192,104,.3);transition:transform .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.lg{padding:18px 40px;font-size:18px}
+  /* NAV */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px}
+  .brand .dot{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--gold2));
+    display:grid;place-items:center;color:#1a1408;font-weight:800}
+  .brand small{display:block;font-size:10px;color:var(--gold);font-weight:600;letter-spacing:1px;margin-top:-3px}
+  /* HERO */
+  .hero{text-align:center;padding:60px 0 50px;background:
+    radial-gradient(900px 500px at 50% -10%,#1c2336 0%,transparent 60%)}
+  .pill{display:inline-block;background:var(--card);border:1px solid var(--line);color:var(--gold);
+    padding:7px 16px;border-radius:999px;font-size:13px;margin-bottom:22px;font-weight:600}
+  .hero h1{font-size:clamp(30px,6vw,52px);font-weight:800;line-height:1.15;margin-bottom:18px}
+  .hero h1 span{background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .hero p{font-size:18px;color:var(--muted);max-width:620px;margin:0 auto 30px}
+  .hero .sub{font-size:13px;color:var(--muted);margin-top:14px}
+  .mock{margin:50px auto 0;max-width:340px;background:linear-gradient(135deg,#1d2335,#161b28);
+    border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .mock .scr{background:var(--bg);border-radius:18px;padding:18px;text-align:left}
+  .mock .lbl{color:var(--muted);font-size:12px}
+  .mock .bal{font-size:30px;font-weight:800;margin:4px 0 16px}
+  .mrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .mrow .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px}
+  .mrow .nm{flex:1;font-size:13px}
+  .mrow .am{font-size:13px;font-weight:700}
+  .red{color:#f87171}.grn{color:var(--green)}
+  /* TRUST */
+  .trust{display:flex;flex-wrap:wrap;justify-content:center;gap:30px;padding:36px 0;border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);margin-top:50px}
+  .trust div{text-align:center}
+  .trust .n{font-size:28px;font-weight:800;color:var(--gold)}
+  .trust .l{font-size:13px;color:var(--muted)}
+  /* SECTIONS */
+  section{padding:70px 0}
+  .eyebrow{color:var(--gold);font-weight:700;font-size:13px;letter-spacing:1.5px;text-align:center;margin-bottom:10px}
+  h2.sec{font-size:clamp(26px,4vw,38px);font-weight:800;text-align:center;margin-bottom:14px}
+  .lead{text-align:center;color:var(--muted);max-width:600px;margin:0 auto 46px;font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px}
+  .feat .ic{width:50px;height:50px;border-radius:14px;background:rgba(230,192,104,.12);display:grid;
+    place-items:center;font-size:24px;margin-bottom:16px}
+  .feat h3{font-size:18px;margin-bottom:8px}
+  .feat p{color:var(--muted);font-size:15px}
+  /* STEPS */
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;counter-reset:s}
+  .step{position:relative;padding-left:8px}
+  .step .num{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+    color:#1a1408;font-weight:800;display:grid;place-items:center;margin-bottom:14px;font-size:18px}
+  .step h3{font-size:17px;margin-bottom:6px}.step p{color:var(--muted);font-size:14px}
+  /* PRICING */
+  .price-wrap{display:flex;justify-content:center}
+  .price{background:linear-gradient(135deg,#1e2438,#161b28);border:1.5px solid var(--gold);border-radius:24px;
+    padding:40px;max-width:420px;width:100%;text-align:center;position:relative}
+  .price .tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--gold);color:#1a1408;
+    font-size:12px;font-weight:700;padding:5px 16px;border-radius:999px}
+  .price .old{color:var(--muted);text-decoration:line-through;font-size:18px}
+  .price .now{font-size:46px;font-weight:800;color:var(--gold);margin:4px 0}
+  .price ul{list-style:none;text-align:left;margin:24px 0;display:flex;flex-direction:column;gap:12px}
+  .price li{display:flex;gap:10px;font-size:15px}.price li:before{content:"✓";color:var(--green);font-weight:800}
+  /* TESTI */
+  .testi{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
+  .testi p{font-size:15px;margin-bottom:16px}
+  .who{display:flex;align-items:center;gap:12px}
+  .who .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+    display:grid;place-items:center;font-weight:800;color:#1a1408}
+  .who .nm{font-weight:700;font-size:14px}.who .rl{font-size:12px;color:var(--muted)}
+  .stars{color:var(--gold);margin-bottom:10px}
+  /* CTA */
+  .cta{text-align:center;background:radial-gradient(700px 400px at 50% 0%,#1d2336,transparent 65%);
+    border-top:1px solid var(--line);padding:80px 0}
+  .cta h2{font-size:clamp(26px,4vw,40px);font-weight:800;margin-bottom:14px}
+  .cta p{color:var(--muted);font-size:17px;margin-bottom:28px}
+  /* FAQ */
+  details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+  summary{cursor:pointer;font-weight:600;font-size:16px;list-style:none;display:flex;justify-content:space-between}
+  summary::after{content:"+";color:var(--gold);font-size:22px}
+  details[open] summary::after{content:"−"}
+  details p{color:var(--muted);margin-top:12px;font-size:15px}
+  footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--muted);font-size:14px}
+  footer a{color:var(--gold)}
+  .guarantee{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:14px;margin-top:18px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><span class="dot">A</span><div>SanguKu<small>BY LUARDIGITAL</small></div></div>
+    <a href="#beli" class="btn" style="padding:11px 22px;font-size:15px">Beli Sekarang</a>
+  </nav>
+</div>
+
+<!-- HERO -->
+<div class="hero"><div class="wrap">
+  <span class="pill">💸 Cocok untuk usia 20–50 tahun</span>
+  <h1>Atur Keuangan Pribadi<br><span>Tanpa Ribet & Tanpa Pusing</span></h1>
+  <p>Catat pemasukan dan pengeluaran harian dalam hitungan detik. Lihat laporan bulanan otomatis dan dapatkan saran keuangan personal — semua dalam satu aplikasi cantik.</p>
+  <a href="#beli" class="btn lg">Mulai Kelola Uangmu →</a>
+  <div class="sub">⭐ Akses selamanya · Update gratis · Garansi 7 hari uang kembali</div>
+
+  <div class="mock"><div class="scr">
+    <div class="lbl">Sisa Saldo Bulan Ini</div>
+    <div class="bal">Rp 6.240.000</div>
+    <div class="mrow"><div class="ic" style="background:#b4530922;color:#d98e2b">☕</div><div class="nm">Kopi pagi</div><div class="am red">−Rp25.000</div></div>
+    <div class="mrow"><div class="ic" style="background:#f59e0b22;color:#f59e0b">🍜</div><div class="nm">Makan siang</div><div class="am red">−Rp35.000</div></div>
+    <div class="mrow"><div class="ic" style="background:#4ade8022;color:#4ade80">💼</div><div class="nm">Gaji Juni</div><div class="am grn">+Rp10.000.000</div></div>
+    <div class="mrow" style="border:none"><div class="ic" style="background:#60a5fa22;color:#60a5fa">🚗</div><div class="nm">Bensin</div><div class="am red">−Rp50.000</div></div>
+  </div></div>
+</div></div>
+
+<div class="wrap">
+  <div class="trust">
+    <div><div class="n">3 detik</div><div class="l">Catat 1 transaksi</div></div>
+    <div><div class="n">Otomatis</div><div class="l">Laporan bulanan</div></div>
+    <div><div class="n">2-in-1</div><div class="l">Aplikasi + Excel</div></div>
+    <div><div class="n">∞</div><div class="l">Akses selamanya</div></div>
+  </div>
+</div>
+
+<!-- MASALAH -->
+<section><div class="wrap">
+  <div class="eyebrow">KENAPA SAKU?</div>
+  <h2 class="sec">Uang habis tapi nggak tahu ke mana?</h2>
+  <p class="lead">Kamu nggak sendirian. Kebanyakan orang kesulitan menabung bukan karena penghasilan kecil, tapi karena tidak tahu ke mana uangnya pergi. SanguKu membantumu melihat semuanya dengan jelas.</p>
+  <div class="grid">
+    <div class="feat"><div class="ic">⚡</div><h3>Input Super Cepat</h3><p>Tekan tombol +, ketik nominal, pilih kategori. Selesai dalam 3 detik. Semudah chat.</p></div>
+    <div class="feat"><div class="ic">📊</div><h3>Dashboard & Grafik</h3><p>Lihat saldo, total pemasukan/pengeluaran, dan grafik per kategori yang langsung update otomatis.</p></div>
+    <div class="feat"><div class="ic">📅</div><h3>Laporan Bulanan</h3><p>Rekap otomatis tiap akhir bulan: ke mana uangmu pergi dan kategori paling boros.</p></div>
+    <div class="feat"><div class="ic">🎯</div><h3>Target Budget</h3><p>Tetapkan batas pengeluaran per kategori. SanguKu ingatkan saat kamu mendekati atau melewati batas.</p></div>
+    <div class="feat"><div class="ic">💡</div><h3>Saran Keuangan</h3><p>Tips personal berdasar datamu: aturan 50/30/20, rasio tabungan, dan target dana darurat.</p></div>
+    <div class="feat"><div class="ic">🔒</div><h3>Data Milikmu</h3><p>Tersimpan aman di perangkatmu sendiri. Tanpa daftar akun ribet, langsung pakai.</p></div>
+  </div>
+</div></section>
+
+<!-- CARA -->
+<section style="background:var(--bg2)"><div class="wrap">
+  <div class="eyebrow">SEMUDAH ITU</div>
+  <h2 class="sec">Mulai dalam 3 langkah</h2>
+  <p class="lead">Tidak perlu jago Excel atau keuangan. SanguKu dirancang agar siapa pun bisa langsung pakai.</p>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><h3>Atur Gaji & Budget</h3><p>Masukkan pemasukan bulanan dan target budget tiap kategori. Atau pakai aturan 50/30/20 otomatis.</p></div>
+    <div class="step"><div class="num">2</div><h3>Catat Harian</h3><p>Setiap belanja, kopi, atau bensin — catat langsung. Cuma butuh beberapa detik.</p></div>
+    <div class="step"><div class="num">3</div><h3>Lihat & Perbaiki</h3><p>Akhir bulan, baca laporan & saran. Tahu persis di mana harus berhemat.</p></div>
+  </div>
+</div></section>
+
+<!-- TESTI -->
+<section><div class="wrap">
+  <div class="eyebrow">KATA PENGGUNA</div>
+  <h2 class="sec">Mereka mulai bisa menabung</h2>
+  <div class="grid" style="margin-top:40px">
+    <div class="testi"><div class="stars">★★★★★</div><p>"Baru sebulan pakai, akhirnya aku tahu ternyata uang kopi sebulan bisa setengah juta. Sekarang bisa nabung."</p><div class="who"><div class="av">R</div><div><div class="nm">Rina, 27</div><div class="rl">Karyawan swasta</div></div></div></div>
+    <div class="testi"><div class="stars">★★★★★</div><p>"Simpel banget. Istri saya yang nggak ngerti Excel pun langsung bisa pakai versi aplikasinya. Worth it."</p><div class="who"><div class="av">B</div><div><div class="nm">Bayu, 34</div><div class="rl">Wiraswasta</div></div></div></div>
+    <div class="testi"><div class="stars">★★★★★</div><p>"Fitur target budget-nya juara. Tiap mau over, langsung ada peringatan. Jadi lebih sadar belanja."</p><div class="who"><div class="av">S</div><div><div class="nm">Sari, 41</div><div class="rl">Ibu rumah tangga</div></div></div></div>
+  </div>
+</div></section>
+
+<!-- PRICING -->
+<section id="beli" style="background:var(--bg2)"><div class="wrap">
+  <div class="eyebrow">PENAWARAN TERBATAS</div>
+  <h2 class="sec">Satu kali bayar, pakai selamanya</h2>
+  <p class="lead">Lupakan langganan bulanan. Dapatkan aplikasi web + template Excel sekaligus.</p>
+  <div class="price-wrap"><div class="price">
+    <div class="tag">HEMAT 60%</div>
+    <div class="old">Rp 199.000</div>
+    <div class="now">Rp 79.000</div>
+    <div style="color:var(--muted);font-size:14px">bayar sekali, tanpa langganan</div>
+    <ul>
+      <li>Aplikasi web SanguKu (buka di HP & laptop)</li>
+      <li>Template Excel + dashboard otomatis</li>
+      <li>Onboarding gaji & target budget</li>
+      <li>Laporan bulanan & grafik otomatis</li>
+      <li>Saran keuangan personal (50/30/20)</li>
+      <li>Update gratis selamanya</li>
+      <li>Panduan pemakaian langkah demi langkah</li>
+    </ul>
+    <a href="#" class="btn lg" style="width:100%">Beli SanguKu Sekarang</a>
+    <div class="guarantee">🛡️ Garansi 7 hari uang kembali</div>
+  </div></div>
+</div></section>
+
+<!-- FAQ -->
+<section><div class="wrap" style="max-width:760px">
+  <div class="eyebrow">PERTANYAAN UMUM</div>
+  <h2 class="sec">Masih ragu?</h2>
+  <div style="margin-top:40px">
+    <details><summary>Apakah ini aplikasi yang harus di-install?</summary><p>Tidak. SanguKu versi web cukup dibuka di browser HP atau laptop — tinggal klik. Kamu juga dapat template Excel untuk yang lebih suka spreadsheet.</p></details>
+    <details><summary>Data keuangan saya aman?</summary><p>Sangat aman. Data tersimpan di perangkatmu sendiri, bukan di server kami. Tidak perlu daftar akun atau berikan info pribadi.</p></details>
+    <details><summary>Saya gaptek, apakah bisa pakai?</summary><p>Bisa banget. SanguKu dirancang sesederhana mungkin — input transaksi semudah mengirim chat. Ada panduan langkah demi langkah juga.</p></details>
+    <details><summary>Bagaimana cara dapat produknya setelah bayar?</summary><p>Setelah pembayaran, kamu langsung menerima link akses aplikasi dan file template via email/WhatsApp. Bisa langsung dipakai hari itu juga.</p></details>
+    <details><summary>Apakah ada biaya bulanan?</summary><p>Tidak ada. Cukup bayar sekali dan pakai selamanya, termasuk semua update di masa depan.</p></details>
+  </div>
+</div></section>
+
+<!-- CTA -->
+<div class="cta"><div class="wrap">
+  <h2>Mulai kendalikan uangmu hari ini</h2>
+  <p>Bergabung dengan mereka yang akhirnya tahu ke mana uangnya pergi.</p>
+  <a href="#beli" class="btn lg">Dapatkan SanguKu — Rp 79.000</a>
+</div></div>
+
+<footer><div class="wrap">
+  <div class="brand" style="justify-content:center;margin-bottom:14px"><span class="dot">A</span><div>SanguKu<small>BY LUARDIGITAL</small></div></div>
+  <p>Produk digital dari <b>LuarDigital</b> · Ikuti kami di <a href="https://instagram.com/LuarDigital">@LuarDigital</a></p>
+  <p style="margin-top:8px;font-size:13px">© 2026 LuarDigital. Semua hak dilindungi.</p>
+</div></footer>
+</body>
+</html>
