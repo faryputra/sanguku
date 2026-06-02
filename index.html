@@ -561,9 +561,10 @@ function dl(name,content,type){const b=new Blob([content],{type});const u=URL.cr
   const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').onclick=()=>dl('sanguku-backup-'+now.toISOString().slice(0,10)+'.json',
   JSON.stringify({tx:data,acc:accounts,rec:recurring,goal:goals,debt:debts,set:settings}),'application/json');
-document.getElementById('expCsv').onclick=()=>{const head='Tanggal,Jenis,Kategori,Catatan,Dompet,Nominal\n';
-  const rows=data.map(t=>[new Date(t.ts).toISOString().slice(0,10),t.type==='in'?'Pemasukan':'Pengeluaran',
-    catInfo(t.type,t.cat).n,'"'+(t.note||'')+'"',accName(t.acc),t.amt].join(',')).join('\n');
+document.getElementById('expCsv').onclick=()=>{const head='Tanggal,Jenis,Kategori,Catatan,Nominal\n';
+  const rows=[...data].sort((a,b)=>(a.ts||a.id)-(b.ts||b.id)).map(t=>[
+    new Date(t.ts).toISOString().slice(0,10),t.type==='in'?'Pemasukan':'Pengeluaran',
+    catInfo(t.type,t.cat).n,'"'+(t.note||'').replace(/"/g,'')+'"',t.amt].join(',')).join('\n');
   dl('sanguku-transaksi-'+now.toISOString().slice(0,10)+'.csv',head+rows,'text/csv');};
 document.getElementById('impBtn').onclick=()=>document.getElementById('impFile').click();
 document.getElementById('impFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
