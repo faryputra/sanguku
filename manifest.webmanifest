@@ -1,7 +1,7 @@
 {
   "name": "SanguKu — Pencatat Keuangan",
   "short_name": "SanguKu",
-  "start_url": "app.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0d0f14",
   "theme_color": "#0d0f14",
