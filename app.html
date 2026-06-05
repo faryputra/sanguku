@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0d0f14">
+<meta name="robots" content="noindex, nofollow">
 <title>SanguKu — Pencatat Keuangan Pribadi</title>
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -296,6 +297,8 @@
 <!-- GENERIC SHEET (wallet/goal/debt/recur add) -->
 <div class="overlay" id="ovGen"><div class="sheet"><button class="close" data-close>✕</button><div id="genBody"></div></div></div>
 
+<div id="licenseFooter" style="text-align:center;color:var(--muted);font-size:11px;line-height:1.6;padding:16px 20px 96px"></div>
+
 <script>
 // ---------- DATA ----------
 const CATS={out:[
@@ -561,9 +564,10 @@ function dl(name,content,type){const b=new Blob([content],{type});const u=URL.cr
   const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
 document.getElementById('expJson').onclick=()=>dl('sanguku-backup-'+now.toISOString().slice(0,10)+'.json',
   JSON.stringify({tx:data,acc:accounts,rec:recurring,goal:goals,debt:debts,set:settings}),'application/json');
-document.getElementById('expCsv').onclick=()=>{const head='Tanggal,Jenis,Kategori,Catatan,Dompet,Nominal\n';
-  const rows=data.map(t=>[new Date(t.ts).toISOString().slice(0,10),t.type==='in'?'Pemasukan':'Pengeluaran',
-    catInfo(t.type,t.cat).n,'"'+(t.note||'')+'"',accName(t.acc),t.amt].join(',')).join('\n');
+document.getElementById('expCsv').onclick=()=>{const head='Tanggal,Jenis,Kategori,Catatan,Nominal\n';
+  const rows=[...data].sort((a,b)=>(a.ts||a.id)-(b.ts||b.id)).map(t=>[
+    new Date(t.ts).toISOString().slice(0,10),t.type==='in'?'Pemasukan':'Pengeluaran',
+    catInfo(t.type,t.cat).n,'"'+(t.note||'').replace(/"/g,'')+'"',t.amt].join(',')).join('\n');
   dl('sanguku-transaksi-'+now.toISOString().slice(0,10)+'.csv',head+rows,'text/csv');};
 document.getElementById('impBtn').onclick=()=>document.getElementById('impFile').click();
 document.getElementById('impFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
@@ -661,6 +665,13 @@ function fillFilters(){document.getElementById('fltCat').innerHTML='<option valu
   [...CATS.out,...CATS.in].filter((c,i,a)=>a.findIndex(x=>x.k===c.k)===i).map(c=>`<option value="${c.k}">${c.n}</option>`).join('');}
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.overlay').classList.remove('show'));
 document.querySelectorAll('.overlay').forEach(o=>o.onclick=e=>{if(e.target===o)o.classList.remove('show');});
+// ---- Lisensi / watermark (anti-share) ----
+(function(){var u=new URLSearchParams(location.search).get('lisensi')||new URLSearchParams(location.search).get('u');
+  var nm=u?String(u).replace(/[<>]/g,'').trim().slice(0,40):'';
+  if(nm)try{localStorage.setItem('sg_lic',nm);}catch(e){} else {try{nm=localStorage.getItem('sg_lic')||'';}catch(e){}}
+  document.getElementById('licenseFooter').innerHTML=
+    (nm?'Lisensi untuk: <b style="color:var(--gold)">'+nm.replace(/[<>]/g,'')+'</b><br>':'')+
+    'SanguKu © LuarDigital · Lisensi pribadi — dilarang menyebarluaskan atau menjual ulang.';})();
 fillFilters();applyRecurring();render();
 if(!settings)openSettings();
 // PWA service worker (only works when hosted)
