@@ -99,13 +99,95 @@
   footer{border-top:1px solid var(--line);padding:34px 0;text-align:center;color:var(--muted);font-size:14px}
   footer a{color:var(--gold)}
   .guarantee{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:14px;margin-top:18px;font-weight:600}
+
+  /* ===== ORDER / CHECKOUT ===== */
+  .order-wrapper{display:grid;grid-template-columns:1fr;gap:28px;max-width:920px;margin:0 auto}
+  @media(min-width:760px){.order-wrapper{grid-template-columns:1fr 1fr;align-items:start}}
+
+  .product-card{background:linear-gradient(135deg,#1e2438,#161b28);border:1.5px solid var(--gold);
+    border-radius:24px;padding:34px;position:relative;overflow:hidden}
+  .product-card::before{content:'HEMAT 60%';position:absolute;top:20px;right:-32px;background:var(--gold);
+    color:#1a1408;font-size:11px;font-weight:800;padding:6px 52px;transform:rotate(35deg);letter-spacing:1px}
+  .product-emoji{font-size:48px;margin-bottom:16px;display:block}
+  .product-title{font-size:21px;font-weight:800;color:var(--txt);margin-bottom:8px;line-height:1.3}
+  .product-subtitle{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:18px}
+  .price-row{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+  .price-now{font-size:38px;font-weight:800;color:var(--gold)}
+  .price-old{font-size:16px;color:var(--muted);text-decoration:line-through}
+  .product-list{list-style:none;display:flex;flex-direction:column;gap:9px}
+  .product-list li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--txt)}
+  .product-list li::before{content:'✓';min-width:22px;height:22px;background:rgba(74,222,128,.15);color:var(--green);
+    border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px}
+
+  .form-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:34px}
+  .form-card-title{font-size:20px;font-weight:800;color:var(--txt);margin-bottom:4px}
+  .form-card-sub{font-size:13px;color:var(--muted);margin-bottom:22px}
+
+  .fg{margin-bottom:16px}
+  .fg label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .fg label .req{color:var(--gold);margin-left:2px}
+  .fg input{width:100%;padding:12px 16px;background:#0d0f14;border:1.5px solid var(--line);border-radius:12px;
+    font-family:inherit;font-size:15px;color:var(--txt);outline:none;transition:border-color .2s,box-shadow .2s}
+  .fg input::placeholder{color:#4a5168}
+  .fg input:focus{border-color:var(--gold2);box-shadow:0 0 0 3px rgba(230,192,104,.12)}
+  .fg.has-error input{border-color:#f87171}
+  .fg .err{font-size:12px;color:#f87171;margin-top:5px;display:none}
+  .fg.has-error .err{display:block}
+
+  .pay-label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+  .pay-label .req{color:var(--gold);margin-left:2px}
+  .pay-skeleton-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+  .pay-skeleton{height:52px;background:var(--line);border-radius:12px;animation:skel 1.2s ease-in-out infinite}
+  @keyframes skel{0%,100%{opacity:1}50%{opacity:.35}}
+  .pay-options{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+  .pay-opt{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#0d0f14;border:1.5px solid var(--line);
+    border-radius:12px;cursor:pointer;transition:border-color .2s,background .2s;user-select:none}
+  .pay-opt:hover{border-color:var(--gold2);background:#13161f}
+  .pay-opt.selected{border-color:var(--gold);background:#16140a}
+  .pay-opt input[type=radio]{display:none}
+  .pay-radio{width:20px;height:20px;border:2px solid var(--line);border-radius:50%;display:flex;align-items:center;
+    justify-content:center;flex-shrink:0;transition:border-color .2s}
+  .pay-opt.selected .pay-radio{border-color:var(--gold)}
+  .pay-radio::after{content:'';width:10px;height:10px;background:var(--gold);border-radius:50%;display:none}
+  .pay-opt.selected .pay-radio::after{display:block}
+  .pay-logo{width:48px;height:28px;object-fit:contain;flex-shrink:0}
+  .pay-name{font-size:13px;font-weight:600;color:var(--txt);flex:1}
+
+  .err-banner{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:12px;
+    padding:12px 16px;font-size:14px;color:#f87171;margin-bottom:16px;display:none}
+
+  .submit-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;
+    font-family:inherit;font-size:17px;font-weight:800;border:none;border-radius:14px;cursor:pointer;
+    box-shadow:0 8px 24px rgba(230,192,104,.3);transition:transform .15s,box-shadow .15s,opacity .15s;
+    display:flex;align-items:center;justify-content:center;gap:10px}
+  .submit-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px rgba(230,192,104,.45)}
+  .submit-btn:disabled{opacity:.65;cursor:not-allowed}
+  .submit-btn .spin{width:20px;height:20px;border:3px solid rgba(26,20,8,.35);border-top-color:#1a1408;
+    border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .submit-btn.loading .spin{display:block}
+  .submit-btn.loading .btn-txt{display:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .form-note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.7}
+
+  .guarantee-box{max-width:680px;margin:0 auto 36px;background:linear-gradient(135deg,rgba(74,222,128,.08),rgba(74,222,128,.02));
+    border:1px solid rgba(74,222,128,.3);border-radius:20px;padding:22px 26px;display:flex;align-items:center;gap:18px}
+  .guarantee-box .shield{font-size:40px;flex-shrink:0}
+  .guarantee-box h3{font-size:16px;font-weight:800;color:var(--green);margin-bottom:4px}
+  .guarantee-box p{font-size:13.5px;color:var(--muted);line-height:1.6}
+  @media(max-width:520px){.guarantee-box{flex-direction:column;text-align:center}}
+
+  .sticky-cta{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);
+    padding:12px 16px;z-index:99;box-shadow:0 -4px 20px rgba(0,0,0,.4)}
+  @media(max-width:759px){.sticky-cta{display:block}body{padding-bottom:68px}}
+  .sticky-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;
+    font-weight:800;font-size:15px;border:none;border-radius:14px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="wrap">
   <nav>
     <div class="brand"><span class="dot">S</span><div>SanguKu<small>BY LUARDIGITAL</small></div></div>
-    <a href="https://luardigital.myscalev.com/p/sanguku" target="_blank" rel="noopener" class="btn" style="padding:11px 22px;font-size:15px">Beli Sekarang</a>
+    <button class="btn" style="padding:11px 22px;font-size:15px" onclick="document.getElementById('beli').scrollIntoView({behavior:'smooth'})">Beli Sekarang</button>
   </nav>
 </div>
 
@@ -184,28 +266,89 @@
   </div>
 </div></section>
 
-<!-- PRICING -->
+<!-- ===== ORDER / CHECKOUT ===== -->
 <section id="beli" style="background:var(--bg2)"><div class="wrap">
   <div class="eyebrow">PENAWARAN TERBATAS</div>
   <h2 class="sec">Satu kali bayar, pakai selamanya</h2>
-  <p class="lead">Lupakan langganan bulanan. Dapatkan aplikasi web + template Excel sekaligus.</p>
-  <div class="price-wrap"><div class="price">
-    <div class="tag">HEMAT 60%</div>
-    <div class="old">Rp 249.000</div>
-    <div class="now">Rp 99.000</div>
-    <div style="color:var(--muted);font-size:14px">bayar sekali, tanpa langganan</div>
-    <ul>
-      <li>Aplikasi web SanguKu (bisa di-install di HP)</li>
-      <li>Banyak dompet, transaksi berulang & target tabungan</li>
-      <li>Utang/piutang, split bill + share WhatsApp</li>
-      <li>Laporan bulanan, grafik & saran otomatis</li>
-      <li>Template Excel + dashboard otomatis</li>
-      <li>Backup & export Excel/CSV</li>
-      <li>Update gratis selamanya + panduan PDF</li>
-    </ul>
-    <a href="https://luardigital.myscalev.com/p/sanguku" target="_blank" rel="noopener" class="btn lg" style="width:100%">Beli SanguKu Sekarang</a>
-    <div class="guarantee">🛡️ Garansi 7 hari uang kembali</div>
-  </div></div>
+  <p class="lead" style="margin-bottom:34px">Lupakan langganan bulanan. Dapatkan aplikasi web + template Excel sekaligus.</p>
+
+  <div class="guarantee-box">
+    <div class="shield">🛡️</div>
+    <div>
+      <h3>Garansi 7 Hari Uang Kembali 100%</h3>
+      <p>Coba SanguKu tanpa risiko. Kalau dalam 7 hari kamu merasa tidak terbantu, cukup hubungi kami — uangmu kembali penuh.</p>
+    </div>
+  </div>
+
+  <div class="order-wrapper">
+    <!-- Product card (static fallback; JS updates from runtime) -->
+    <div class="product-card">
+      <span class="product-emoji">💰</span>
+      <div class="product-title" id="product-title">SanguKu — Aplikasi Keuangan Pribadi</div>
+      <p class="product-subtitle">Aplikasi web + template Excel pencatat keuangan. Catat dalam detik, laporan otomatis, saran personal.</p>
+      <div class="price-row">
+        <span class="price-now" id="product-price">Rp 99.000</span>
+        <span class="price-old">Rp 249.000</span>
+      </div>
+      <ul class="product-list">
+        <li>Aplikasi web SanguKu (bisa di-install di HP)</li>
+        <li>Banyak dompet, transaksi berulang &amp; target tabungan</li>
+        <li>Utang/piutang, split bill + share WhatsApp</li>
+        <li>Laporan bulanan, grafik &amp; saran otomatis</li>
+        <li>Template Excel + dashboard otomatis</li>
+        <li>Backup &amp; export Excel/CSV</li>
+        <li>Update gratis selamanya + panduan PDF</li>
+        <li>🎁 BONUS 3 Ebook (Anti Boros, Budgeting 50/30/20, Dana Darurat)</li>
+      </ul>
+    </div>
+
+    <!-- Order form -->
+    <div class="form-card">
+      <div class="form-card-title">📝 Isi Data &amp; Bayar</div>
+      <p class="form-card-sub">Isi data di bawah, pilih metode bayar, lalu checkout!</p>
+
+      <div class="err-banner" id="err-banner"></div>
+
+      <form id="checkout-form" novalidate>
+        <div class="fg" id="fg-name">
+          <label for="customerName">Nama Lengkap <span class="req">*</span></label>
+          <input type="text" id="customerName" name="customerName" placeholder="Contoh: Budi Santoso" autocomplete="name" />
+          <span class="err">Nama lengkap wajib diisi</span>
+        </div>
+
+        <div class="fg" id="fg-email">
+          <label for="customerEmail">Email Aktif <span class="req">*</span></label>
+          <input type="email" id="customerEmail" name="customerEmail" placeholder="email@kamu.com" autocomplete="email" />
+          <span class="err">Email valid wajib diisi — link akses dikirim ke sini</span>
+        </div>
+
+        <div class="fg" id="fg-phone">
+          <label for="customerPhone">Nomor WhatsApp <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#6a7191">(opsional)</span></label>
+          <input type="tel" id="customerPhone" name="customerPhone" placeholder="08xxxxxxxxxx" autocomplete="tel" />
+          <span class="err">Format nomor WhatsApp tidak valid</span>
+        </div>
+
+        <div id="payment-wrap">
+          <p class="pay-label">Metode Pembayaran <span class="req">*</span></p>
+          <div class="pay-skeleton-wrap" id="pay-loading">
+            <div class="pay-skeleton"></div>
+            <div class="pay-skeleton"></div>
+            <div class="pay-skeleton"></div>
+          </div>
+          <div class="pay-options" id="pay-options" style="display:none"></div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn" disabled>
+          <span class="spin"></span>
+          <span class="btn-txt">🛒 Beli SanguKu Sekarang →</span>
+        </button>
+
+        <p class="form-note">
+          🔒 Bayar aman via Scalev &nbsp;·&nbsp; 📥 Link akses dikirim ke email setelah pembayaran &nbsp;·&nbsp; 🛡️ Garansi 7 hari
+        </p>
+      </form>
+    </div>
+  </div>
 </div></section>
 
 <!-- FAQ -->
@@ -218,6 +361,7 @@
     <details><summary>Saya gaptek, apakah bisa pakai?</summary><p>Bisa banget. SanguKu dirancang sesederhana mungkin — input transaksi semudah mengirim chat. Ada panduan langkah demi langkah juga.</p></details>
     <details><summary>Bagaimana cara dapat produknya setelah bayar?</summary><p>Setelah pembayaran, kamu langsung menerima link akses aplikasi dan file template via email/WhatsApp. Bisa langsung dipakai hari itu juga.</p></details>
     <details><summary>Apakah ada biaya bulanan?</summary><p>Tidak ada. Cukup bayar sekali dan pakai selamanya, termasuk semua update di masa depan.</p></details>
+    <details><summary>Apakah aplikasi & template Excel saling terhubung?</summary><p>Keduanya alat terpisah — kamu bebas pakai salah satu atau dua-duanya. Data di aplikasi tidak otomatis masuk ke Excel. Tapi di aplikasi ada menu <b>Export CSV</b> yang bisa kamu buka/tempel ke Excel kapan pun kalau ingin memindahkan data.</p></details>
   </div>
 </div></section>
 
@@ -225,13 +369,281 @@
 <div class="cta"><div class="wrap">
   <h2>Mulai kendalikan uangmu hari ini</h2>
   <p>Bergabung dengan mereka yang akhirnya tahu ke mana uangnya pergi.</p>
-  <a href="https://luardigital.myscalev.com/p/sanguku" target="_blank" rel="noopener" class="btn lg">Dapatkan SanguKu — Rp 99.000</a>
+  <button class="btn lg" onclick="document.getElementById('beli').scrollIntoView({behavior:'smooth'})">Dapatkan SanguKu — <span id="cta-price">Rp 99.000</span></button>
 </div></div>
 
 <footer><div class="wrap">
   <div class="brand" style="justify-content:center;margin-bottom:14px"><span class="dot">S</span><div>SanguKu<small>BY LUARDIGITAL</small></div></div>
-  <p>Produk digital dari <b>LuarDigital</b> · Ikuti kami di <a href="https://instagram.com/LuarDigital">@LuarDigital</a></p>
+  <p>Produk digital dari <b>LuarDigital</b> · Ikuti kami di <a href="https://instagram.com/luardigital.id">@luardigital.id</a></p>
   <p style="margin-top:8px;font-size:13px">© 2026 LuarDigital. Semua hak dilindungi.</p>
 </div></footer>
+
+<!-- Sticky CTA (mobile only) -->
+<div class="sticky-cta">
+  <button class="sticky-btn" onclick="document.getElementById('beli').scrollIntoView({behavior:'smooth'})">
+    🛒 Beli Sekarang — <span id="sticky-price">Rp 99.000</span>
+  </button>
+</div>
+
+<script>
+/* ================================================================
+   SCALEV HTML MODE — CHECKOUT
+   Docs: https://docs.scalev.com/en/html-mode-runtime
+         https://docs.scalev.com/en/html-mode-checkout-success-paths
+   ================================================================ */
+
+/* ---- Payment filter: VA BNI, VA Mandiri, VA BCA, QRIS ---- */
+function isAllowedPayment(value) {
+  if (!value) return false;
+  const v = value.toLowerCase();
+  return v === 'va:bni' || v === 'va:mandiri' || v === 'va:bca' || v === 'qris';
+}
+
+/* ---- Helpers ---- */
+function formatRupiah(n){ return 'Rp ' + Number(n).toLocaleString('id-ID'); }
+function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+function isValidPhone(v){ if(!v.trim()) return true; return /^(\+62|62|0)[0-9]{8,13}$/.test(v.replace(/[\s\-]/g,'')); }
+function setGroupError(id,on){ const el=document.getElementById(id); if(el) on?el.classList.add('has-error'):el.classList.remove('has-error'); }
+function showBanner(msg){ const el=document.getElementById('err-banner'); if(!el) return; el.textContent=msg; el.style.display=msg?'block':'none'; }
+
+/* ---- Payment option rendering ---- */
+let selectedPaymentValue = null;
+
+function renderPaymentOptions(options){
+  const loading = document.getElementById('pay-loading');
+  const container = document.getElementById('pay-options');
+  if(!container) return;
+
+  const filtered = options.filter(o => isAllowedPayment(o.value));
+  const toShow = filtered.length > 0 ? filtered : options.slice(0, 4);
+
+  container.innerHTML = '';
+  toShow.forEach((opt, i) => {
+    const label = document.createElement('label');
+    label.className = 'pay-opt' + (i === 0 ? ' selected' : '');
+    label.dataset.value = opt.value;
+    if (i === 0) selectedPaymentValue = opt.value;
+
+    const logoHtml = opt.logo_url
+      ? `<img src="${opt.logo_url}" alt="${opt.display}" class="pay-logo" onerror="this.style.display='none'" />`
+      : '';
+
+    label.innerHTML = `
+      <input type="radio" name="paymentMethod" value="${opt.value}" ${i === 0 ? 'checked' : ''} />
+      <div class="pay-radio"></div>
+      ${logoHtml}
+      <span class="pay-name">${opt.display}</span>`;
+
+    label.addEventListener('click', () => {
+      document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('selected'));
+      label.classList.add('selected');
+      selectedPaymentValue = opt.value;
+      label.querySelector('input[type=radio]').checked = true;
+    });
+
+    container.appendChild(label);
+  });
+
+  loading.style.display = 'none';
+  container.style.display = 'flex';
+  document.getElementById('submit-btn').disabled = false;
+}
+
+/* ---- Success path helpers (per docs) ---- */
+const E_PAY_METHODS = new Set(['va','qris','card','invoice','alfamart','ovo','dana','shopeepay','linkaja','gopay']);
+const SCALEV_HOSTS  = new Set(['scalev.com','scalev.id','app.scalev.id','app.scalev.com']);
+
+function pmForRedirect(pm){
+  if (typeof pm !== 'string') return pm;
+  if (pm.toLowerCase().startsWith('va:')) return 'va';
+  if (pm.toLowerCase().startsWith('bt:')) return 'bank_transfer';
+  return pm;
+}
+function publicOrderUrl(order){
+  if (order.public_order_url) return order.public_order_url;
+  return new URL('/o/' + order.secret_slug, window.location.origin).toString();
+}
+function paymentInstructionUrl(order){
+  if (order.status === 'draft') return publicOrderUrl(order);
+  if (order.payment_url) return order.payment_url;
+  const u = new URL(publicOrderUrl(order));
+  u.pathname = u.pathname.replace(/\/$/, '') + '/success';
+  return u.toString();
+}
+function whatsappUrl(phone, order, fallback){
+  const p = String(phone || '').replace(/[^\d]/g, '');
+  const m = order.chat_message || encodeURIComponent(fallback || '');
+  return 'https://api.whatsapp.com/send/?phone=' + p + '&text=' + m;
+}
+function withCurrentQuery(url){
+  const u = new URL(url, window.location.href);
+  new URLSearchParams(window.location.search).forEach((v, k) => u.searchParams.set(k, v));
+  return u.toString();
+}
+function maybeForwardQuery(url){
+  const u = new URL(url, window.location.href);
+  return (u.host === window.location.host || SCALEV_HOSTS.has(u.host)) ? withCurrentQuery(u.toString()) : u.toString();
+}
+function navigateAfterOrder(url){
+  if (window.self !== window.top){ window.parent.postMessage(url, '*'); return; }
+  window.location.assign(url);
+}
+function redirectAfterOrder({ type, orderResponse, paymentMethod, customWhatsappPhone, otherPagePath, customUrl }){
+  const order = orderResponse.data;
+  const rPm   = pmForRedirect(paymentMethod || order.payment_method);
+  const fType = E_PAY_METHODS.has(rPm) ? 'success_page' : type;
+
+  if (fType === 'success_page')              return navigateAfterOrder(paymentInstructionUrl(order));
+  if (fType === 'direct_to_whatsapp')        return navigateAfterOrder(order.handler_phone ? whatsappUrl(order.handler_phone, order) : publicOrderUrl(order));
+  if (fType === 'direct_to_custom_whatsapp') return navigateAfterOrder(whatsappUrl(customWhatsappPhone, order));
+  if (fType === 'other_page')                return navigateAfterOrder(withCurrentQuery(otherPagePath));
+  if (fType === 'order_page')                return navigateAfterOrder(publicOrderUrl(order));
+  if (fType === 'custom_url')                return navigateAfterOrder(maybeForwardQuery(customUrl));
+  return navigateAfterOrder(paymentInstructionUrl(order));
+}
+
+/* ---- INIT ---- */
+let scalevData = null;
+let selectedVariant = null;
+
+async function init(){
+  const scalev = window.Scalev;
+
+  if (!scalev || !scalev.data || !scalev.data.get){
+    document.getElementById('pay-loading').style.display = 'none';
+    document.getElementById('pay-options').style.display = 'flex';
+    document.getElementById('pay-options').innerHTML =
+      '<p style="font-size:13px;color:var(--muted);padding:8px 0">Metode pembayaran tersedia saat halaman aktif di Scalev.</p>';
+    document.getElementById('submit-btn').disabled = false;
+    return;
+  }
+
+  scalevData = scalev.data.get();
+  const store = scalevData.store;
+
+  if (store){
+    const products = store.products || [];
+    const first = products[0];
+    if (first){
+      document.getElementById('product-title').textContent = first.name || 'SanguKu — Aplikasi Keuangan Pribadi';
+      const variant = (first.variants || [])[0];
+      if (variant){
+        selectedVariant = variant;
+        const p = formatRupiah(variant.price);
+        document.getElementById('product-price').textContent = p;
+        const cta = document.getElementById('cta-price');     if (cta) cta.textContent = p;
+        const stk = document.getElementById('sticky-price');  if (stk) stk.textContent = p;
+      }
+    }
+    renderPaymentOptions(store.payment_method_options || []);
+  }
+
+  // Prefill
+  try {
+    if (scalev.prefill && scalev.prefill.get){
+      const pf = await scalev.prefill.get();
+      const d = pf.data || {};
+      if (d.customerName)  document.getElementById('customerName').value  = d.customerName;
+      if (d.customerEmail) document.getElementById('customerEmail').value = d.customerEmail;
+      if (d.customerPhone) document.getElementById('customerPhone').value = d.customerPhone;
+    }
+  } catch(_){}
+
+  try {
+    if (scalev.customer && scalev.customer.prefill){
+      const c = await scalev.customer.prefill();
+      if (c){
+        if (c.name  && !document.getElementById('customerName').value)  document.getElementById('customerName').value  = c.name;
+        if (c.email && !document.getElementById('customerEmail').value) document.getElementById('customerEmail').value = c.email;
+        if (c.phone && !document.getElementById('customerPhone').value) document.getElementById('customerPhone').value = c.phone;
+      }
+    }
+  } catch(_){}
+}
+
+/* ---- SUBMIT ---- */
+document.getElementById('checkout-form').addEventListener('submit', async function(e){
+  e.preventDefault();
+
+  const name  = document.getElementById('customerName').value.trim();
+  const email = document.getElementById('customerEmail').value.trim();
+  const phone = document.getElementById('customerPhone').value.trim();
+
+  let hasErr = false;
+  ['fg-name','fg-email','fg-phone'].forEach(id => setGroupError(id, false));
+  showBanner('');
+
+  if (!name)                          { setGroupError('fg-name',  true); hasErr = true; }
+  if (!email || !isValidEmail(email)) { setGroupError('fg-email', true); hasErr = true; }
+  if (phone && !isValidPhone(phone))  { setGroupError('fg-phone', true); hasErr = true; }
+  if (!selectedPaymentValue)          { showBanner('Pilih metode pembayaran terlebih dahulu.'); hasErr = true; }
+
+  if (hasErr){
+    const first = document.querySelector('.fg.has-error, #err-banner[style*="block"]');
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const scalev = window.Scalev;
+  if (!scalev || !scalev.checkout || !scalev.checkout.createOrder){
+    showBanner('Checkout tidak tersedia. Pastikan halaman diakses melalui Scalev.');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  try {
+    if (scalev.prefill && scalev.prefill.save){
+      await scalev.prefill.save({ customerName: name, customerEmail: email, customerPhone: phone }, { source: 'html_mode' });
+    }
+
+    const data  = scalevData || scalev.data.get();
+    const store = data.store;
+    const page  = data.page;
+
+    let orderItems = {};
+    const v = selectedVariant || (store && store.products && store.products[0] && (store.products[0].variants || [])[0]);
+    if (v && v.unique_id){
+      orderItems = { ordervariants: [{ variant_unique_id: v.unique_id, quantity: 1 }] };
+    }
+
+    const payload = {
+      page:  page.uniqueId,
+      store: store.unique_id,
+      customerName:  name,
+      customerEmail: email,
+      ...(phone ? { customerPhone: phone } : {}),
+      paymentMethod: selectedPaymentValue,
+      ...orderItems
+    };
+
+    const orderResponse = await scalev.checkout.createOrder(payload);
+    const afterCheckout = (data.after_checkout) || { type: 'success_page' };
+
+    redirectAfterOrder({
+      type:                afterCheckout.type,
+      orderResponse,
+      paymentMethod:       selectedPaymentValue,
+      customWhatsappPhone: afterCheckout.custom_whatsapp_phone,
+      otherPagePath:       afterCheckout.other_page_path,
+      customUrl:           afterCheckout.custom_url
+    });
+
+  } catch (err){
+    showBanner(err.message || 'Terjadi kesalahan. Silakan coba lagi.');
+    console.debug('Scalev checkout error', {
+      status: err.status, data: err.data,
+      diagnostics: window.Scalev && window.Scalev.diagnostics ? window.Scalev.diagnostics.get() : null
+    });
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+});
+
+/* ---- Run ---- */
+init();
+</script>
 </body>
 </html>
