@@ -136,6 +136,14 @@
     </div>
   </header>
 
+  <div id="profileBar" style="display:none;margin-bottom:12px">
+    <button id="profileBtn" style="width:100%;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:var(--txt);cursor:pointer;font-size:14px">
+      <span id="profIcon" style="font-size:18px">👤</span>
+      <span style="flex:1;text-align:left"><b id="profName">Pribadi</b> <span class="chip" id="profType">pribadi</span></span>
+      <span style="color:var(--gold)">Ganti ▾</span>
+    </button>
+  </div>
+
   <div class="tabs" id="tabs">
     <button class="active" data-tab="home">Beranda</button>
     <button data-tab="tx">Transaksi</button>
@@ -182,6 +190,7 @@
   <div id="tab-wallet" class="hidden">
     <h2>Dompet / Akun</h2>
     <div id="walletList"></div>
+    <div class="add-card" id="addTransfer" style="border-color:var(--blue);color:var(--blue)">⇄ Transfer antar dompet</div>
     <div class="add-card" id="addWallet">+ Tambah dompet</div>
   </div>
 
@@ -297,25 +306,57 @@
 <!-- GENERIC SHEET (wallet/goal/debt/recur add) -->
 <div class="overlay" id="ovGen"><div class="sheet"><button class="close" data-close>✕</button><div id="genBody"></div></div></div>
 
+<!-- PROFILE SHEET -->
+<div class="overlay" id="ovProfile"><div class="sheet"><button class="close" data-close>✕</button>
+  <h3>Profil / Workspace</h3>
+  <div id="profileList" style="margin-bottom:12px"></div>
+  <div class="add-card" id="addProfile">+ Tambah profil baru</div>
+</div></div>
+
 <div id="licenseFooter" style="text-align:center;color:var(--muted);font-size:11px;line-height:1.6;padding:16px 20px 96px"></div>
 
 <script>
 // ---------- DATA ----------
-const CATS={out:[
+const DEFAULT_CATS={out:[
   {k:'makan',n:'Makan',e:'🍜',c:'#f59e0b'},{k:'kopi',n:'Kopi',e:'☕',c:'#b45309'},
   {k:'transport',n:'Transport',e:'🚗',c:'#60a5fa'},{k:'belanja',n:'Belanja',e:'🛍️',c:'#f472b6'},
   {k:'tagihan',n:'Tagihan',e:'🧾',c:'#a78bfa'},{k:'hiburan',n:'Hiburan',e:'🎮',c:'#34d399'},
   {k:'sehat',n:'Kesehatan',e:'💊',c:'#fb7185'},{k:'lain',n:'Lainnya',e:'📦',c:'#94a3b8'}],
   in:[{k:'gaji',n:'Gaji',e:'💼',c:'#4ade80'},{k:'bonus',n:'Bonus',e:'🎁',c:'#e6c068'},
   {k:'usaha',n:'Usaha',e:'🏪',c:'#60a5fa'},{k:'lain',n:'Lainnya',e:'💰',c:'#94a3b8'}]};
+const CAT_COLORS=['#f59e0b','#b45309','#60a5fa','#f472b6','#a78bfa','#34d399','#fb7185','#4ade80','#e6c068','#22d3ee','#fb923c','#94a3b8'];
 const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const CUR={IDR:'Rp',USD:'$',EUR:'€',SGD:'S$',MYR:'RM',JPY:'¥'};
 const WTYPE={cash:'💵',bank:'🏦',ewallet:'📱'};
 const L=(k,d)=>JSON.parse(localStorage.getItem(k)||d);
-let data=L('sg_tx','[]'), settings=L('sg_set','null'),
-    accounts=L('sg_acc','null'), recurring=L('sg_rec','[]'),
-    goals=L('sg_goal','[]'), debts=L('sg_debt','[]');
-if(!accounts){accounts=[{id:1,name:'Tunai',type:'cash',start:0}];localStorage.setItem('sg_acc',JSON.stringify(accounts));}
+// ---------- PRO + MULTI-PROFIL (fondasi) ----------
+const qp=new URLSearchParams(location.search);
+if(qp.get('pro')==='1')try{localStorage.setItem('sg_pro','1');}catch(e){}
+const PRO = location.hostname.indexOf('pro.')===0 || qp.get('pro')==='1' || localStorage.getItem('sg_pro')==='1';
+function migrateProfiles(){
+  if(!localStorage.getItem('sg_profiles')){
+    localStorage.setItem('sg_profiles',JSON.stringify([{id:'p1',name:'Pribadi',type:'pribadi'}]));
+    localStorage.setItem('sg_active','p1');
+    ['tx','set','acc','rec','goal','debt'].forEach(function(k){
+      var old=localStorage.getItem('sg_'+k);
+      if(old!==null && localStorage.getItem('sg_p1_'+k)===null) localStorage.setItem('sg_p1_'+k,old);
+    });
+  }
+}
+migrateProfiles();
+let profiles=L('sg_profiles','[]');
+let activeProfile=localStorage.getItem('sg_active')||(profiles[0]&&profiles[0].id)||'p1';
+if(!profiles.some(p=>p.id===activeProfile))activeProfile=(profiles[0]&&profiles[0].id)||'p1';
+const PK=k=>'sg_'+activeProfile+'_'+k;
+const activeProf=()=>profiles.find(p=>p.id===activeProfile)||{id:'p1',name:'Pribadi',type:'pribadi'};
+const saveProfiles=()=>{localStorage.setItem('sg_profiles',JSON.stringify(profiles));localStorage.setItem('sg_active',activeProfile);};
+function switchProfile(id){activeProfile=id;localStorage.setItem('sg_active',id);location.reload();}
+let data=L(PK('tx'),'[]'), settings=L(PK('set'),'null'),
+    accounts=L(PK('acc'),'null'), recurring=L(PK('rec'),'[]'),
+    goals=L(PK('goal'),'[]'), debts=L(PK('debt'),'[]');
+if(!accounts){accounts=[{id:1,name:'Tunai',type:'cash',start:0}];localStorage.setItem(PK('acc'),JSON.stringify(accounts));}
+let CATS=L(PK('cats'),'null'); if(!CATS||!CATS.out||!CATS.in)CATS=JSON.parse(JSON.stringify(DEFAULT_CATS));
+const saveCats=()=>localStorage.setItem(PK('cats'),JSON.stringify(CATS));
 let curType='out',curCat='makan',curPhoto='',editId=null,debtKind='utang';
 const now=new Date();
 let view=new Date(now.getFullYear(),now.getMonth(),1);
@@ -325,13 +366,16 @@ const sym=()=>CUR[(settings&&settings.currency)||'IDR'];
 const rp=n=>sym()+Math.round(n).toLocaleString('id-ID');
 const catInfo=(t,k)=>CATS[t].find(c=>c.k===k)||CATS[t][CATS[t].length-1];
 const accName=id=>{const a=accounts.find(x=>x.id===id);return a?a.name:'-';};
-const saveTx=()=>localStorage.setItem('sg_tx',JSON.stringify(data));
-const saveAll=()=>{localStorage.setItem('sg_tx',JSON.stringify(data));localStorage.setItem('sg_acc',JSON.stringify(accounts));
-  localStorage.setItem('sg_rec',JSON.stringify(recurring));localStorage.setItem('sg_goal',JSON.stringify(goals));
-  localStorage.setItem('sg_debt',JSON.stringify(debts));if(settings)localStorage.setItem('sg_set',JSON.stringify(settings));};
+const saveTx=()=>localStorage.setItem(PK('tx'),JSON.stringify(data));
+const saveAll=()=>{localStorage.setItem(PK('tx'),JSON.stringify(data));localStorage.setItem(PK('acc'),JSON.stringify(accounts));
+  localStorage.setItem(PK('rec'),JSON.stringify(recurring));localStorage.setItem(PK('goal'),JSON.stringify(goals));
+  localStorage.setItem(PK('debt'),JSON.stringify(debts));if(settings)localStorage.setItem(PK('set'),JSON.stringify(settings));};
 const monthTx=()=>data.filter(t=>t.month===mkey(view));
 const accBalance=id=>{const a=accounts.find(x=>x.id===id);let b=a?a.start:0;
-  data.forEach(t=>{if(t.acc===id)b+=t.type==='in'?t.amt:-t.amt;});return b;};
+  data.forEach(t=>{
+    if(t.type==='tf'){if(t.from===id)b-=t.amt;if(t.to===id)b+=t.amt;}
+    else if(t.acc===id)b+=(t.type==='in'?t.amt:-t.amt);
+  });return b;};
 const totalBalance=()=>accounts.reduce((s,a)=>s+accBalance(a.id),0);
 
 // ---------- RECURRING auto-apply ----------
@@ -384,7 +428,14 @@ function render(){
   renderRecent(); renderTxAll(); renderWallets(); renderGoals(); renderDebts(); renderRecur();
   renderReport(sorted,tout); renderAdvice(tin,tout,byCat);
 }
-function txRowHTML(t,withAcc){const c=catInfo(t.type,t.cat);
+function txRowHTML(t,withAcc){
+  if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
+    <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${t.date}</div></div>
+    <div class="amt">${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
+  if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#e6c06822;color:var(--gold)">🐷</div>
+    <div class="meta"><div class="n">Nabung${g?': '+g.name:''}</div><div class="d">dari ${accName(t.acc)} · ${t.date}</div></div>
+    <div class="amt out">−${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
+  const c=catInfo(t.type,t.cat);
   return `<div class="row"><div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
     ${t.photo?`<img class="thumb" src="${t.photo}">`:''}
     <div class="meta"><div class="n">${t.note||c.n}</div><div class="d">${c.n} · ${t.date}${withAcc?' · '+accName(t.acc):''}</div></div>
@@ -397,7 +448,7 @@ function renderTxAll(){
   const ft=document.getElementById('fltType').value, fc=document.getElementById('fltCat').value;
   let tx=monthTx().sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
   if(ft)tx=tx.filter(t=>t.type===ft); if(fc)tx=tx.filter(t=>t.cat===fc);
-  if(q)tx=tx.filter(t=>((t.note||'')+catInfo(t.type,t.cat).n).toLowerCase().includes(q));
+  if(q)tx=tx.filter(t=>((t.note||'')+(CATS[t.type]?catInfo(t.type,t.cat).n:(t.type==='tf'?'transfer':'nabung'))).toLowerCase().includes(q));
   document.getElementById('txAll').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):'<div class="empty">Tidak ada transaksi yang cocok.</div>';
 }
 function renderWallets(){
@@ -475,12 +526,27 @@ function renderAdvice(tin,tout,byCat){
 }
 
 // ---------- ACTIONS ----------
-window.delTx=id=>{if(confirm('Hapus transaksi ini?')){data=data.filter(t=>t.id!==id);saveTx();render();}};
-window.delWallet=id=>{if(data.some(t=>t.acc===id)){alert('Masih ada transaksi di dompet ini.');return;}
+window.delTx=id=>{if(confirm('Hapus transaksi ini?')){
+  const t=data.find(x=>x.id===id);
+  if(t&&t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
+  data=data.filter(t=>t.id!==id);saveAll();render();}};
+window.delWallet=id=>{if(data.some(t=>t.acc===id||t.from===id||t.to===id)){alert('Masih ada transaksi/transfer di dompet ini.');return;}
   if(confirm('Hapus dompet ini?')){accounts=accounts.filter(a=>a.id!==id);saveAll();render();}};
-window.delGoal=id=>{if(confirm('Hapus target?')){goals=goals.filter(g=>g.id!==id);saveAll();render();}};
-window.addSaving=id=>{const v=prompt('Tambah tabungan (angka):');const n=Number((v||'').replace(/\D/g,''));
-  if(n){const g=goals.find(x=>x.id===id);g.saved+=n;saveAll();render();}};
+window.delGoal=id=>{const g=goals.find(x=>x.id===id);
+  if(confirm('Hapus target?'+(g&&g.saved>0?' Dana '+rp(g.saved)+' yang sudah ditabung akan dikembalikan ke dompet asal.':''))){
+    // kembalikan: hapus transaksi nabung milik goal ini (saldo dompet otomatis balik)
+    data=data.filter(t=>!(t.type==='sav'&&t.goal===id));
+    goals=goals.filter(x=>x.id!==id);saveAll();render();}};
+window.addSaving=id=>openGen(`<h3>Nabung ke Target</h3>
+  <label>Jumlah (Rp)</label><input id="gSvAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+  <label>Ambil dari dompet</label><select id="gSvAcc">${accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name} (${rp(accBalance(a.id))})</option>`).join('')}</select>
+  <button class="save-btn" onclick="saveSaving(${id})">Nabung</button>
+  <div class="small" style="margin-top:8px">Uang akan dikurangi dari saldo dompet yang dipilih.</div>`);
+window.saveSaving=id=>{const n=Number(document.getElementById('gSvAmt').value.replace(/\D/g,''));if(!n)return;
+  const acc=Number(document.getElementById('gSvAcc').value);const g=goals.find(x=>x.id===id);if(!g)return;
+  g.saved+=n;const d=new Date();
+  data.push({id:Date.now(),type:'sav',goal:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),ts:d.getTime(),month:mkey(d)});
+  saveAll();ovGen.classList.remove('show');render();};
 window.delDebt=id=>{if(confirm('Hapus catatan?')){debts=debts.filter(d=>d.id!==id);saveAll();render();}};
 window.toggleDebt=id=>{const d=debts.find(x=>x.id===id);d.paid=!d.paid;saveAll();render();};
 window.delRecur=id=>{if(confirm('Hapus transaksi berulang?')){recurring=recurring.filter(r=>r.id!==id);saveAll();render();}};
@@ -507,8 +573,9 @@ const fmt=el=>el.oninput=()=>{let v=el.value.replace(/\D/g,'');el.value=v?Number
 fmt(document.getElementById('amtInput'));
 function fillAccSelect(sel){sel.innerHTML=accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name}</option>`).join('');}
 function buildCatGrid(){document.getElementById('catGrid').innerHTML=CATS[curType].map(c=>
-  `<button data-k="${c.k}" class="${c.k===curCat?'sel':''}"><span class="e">${c.e}</span>${c.n}</button>`).join('');
-  document.querySelectorAll('#catGrid button').forEach(b=>b.onclick=()=>{curCat=b.dataset.k;buildCatGrid();});}
+  `<button data-k="${c.k}" class="${c.k===curCat?'sel':''}"><span class="e">${c.e}</span>${c.n}</button>`).join('')
+  +`<button data-mng="1" style="border-style:dashed"><span class="e">✎</span>Kelola</button>`;
+  document.querySelectorAll('#catGrid button').forEach(b=>b.onclick=()=>{if(b.dataset.mng){manageCats(curType);return;}curCat=b.dataset.k;buildCatGrid();});}
 function setType(t){curType=t;curCat=CATS[t][0].k;
   document.getElementById('segOut').className=t==='out'?'active out':'';
   document.getElementById('segIn').className=t==='in'?'active in':'';buildCatGrid();}
@@ -558,7 +625,7 @@ document.getElementById('setSave').onclick=()=>{
   const gaji=Number(document.getElementById('gajiInput').value.replace(/\D/g,''));
   const budgets={};document.querySelectorAll('#budgetList input').forEach(i=>budgets[i.dataset.k]=Number(i.value.replace(/\D/g,''))||0);
   settings={gaji,budgets,currency:document.getElementById('curInput').value,reminder:document.getElementById('remOn').classList.contains('active')};
-  localStorage.setItem('sg_set',JSON.stringify(settings));ovSet.classList.remove('show');render();};
+  localStorage.setItem(PK('set'),JSON.stringify(settings));ovSet.classList.remove('show');render();};
 // export/import
 function dl(name,content,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);
   const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);}
@@ -587,6 +654,49 @@ document.getElementById('addWallet').onclick=()=>openGen(`<h3>Tambah Dompet</h3>
 window.saveWallet=()=>{const n=document.getElementById('gName').value.trim();if(!n)return;
   accounts.push({id:Date.now(),name:n,type:document.getElementById('gType').value,start:Number(document.getElementById('gStart').value.replace(/\D/g,''))||0});
   saveAll();ovGen.classList.remove('show');render();};
+// --- Transfer antar dompet ---
+document.getElementById('addTransfer').onclick=()=>{
+  if(accounts.length<2){alert('Butuh minimal 2 dompet untuk transfer.');return;}
+  const opts=accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name} (${rp(accBalance(a.id))})</option>`).join('');
+  openGen(`<h3>Transfer Antar Dompet</h3>
+   <label>Dari</label><select id="gTFrom">${opts}</select>
+   <label>Ke</label><select id="gTTo">${opts}</select>
+   <label>Jumlah (Rp)</label><input id="gTAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+   <label>Tanggal</label><input id="gTDate" type="date">
+   <button class="save-btn" onclick="saveTransfer()">Transfer</button>`);
+  setTimeout(()=>{document.getElementById('gTDate').value=new Date().toISOString().slice(0,10);if(accounts[1])document.getElementById('gTTo').value=accounts[1].id;},0);
+};
+window.saveTransfer=()=>{const from=Number(document.getElementById('gTFrom').value),to=Number(document.getElementById('gTTo').value);
+  const amt=Number(document.getElementById('gTAmt').value.replace(/\D/g,''));
+  if(!amt)return; if(from===to){alert('Pilih dompet asal & tujuan yang berbeda.');return;}
+  const dv=document.getElementById('gTDate').value;const d=dv?new Date(dv+'T00:00:00'):new Date();
+  data.push({id:Date.now(),type:'tf',from,to,amt,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),ts:d.getTime(),month:mkey(d)});
+  saveTx();ovGen.classList.remove('show');render();};
+// --- Kelola kategori ---
+window.manageCats=(type)=>{type=type||curType;
+  const list=CATS[type].map(c=>`<div class="row">
+     <div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
+     <div class="meta"><div class="n">${c.n}</div></div>
+     <button class="mini-btn" onclick="renameCat('${type}','${c.k}')">Ubah</button>
+     <button class="mini-btn" onclick="delCat('${type}','${c.k}')">Hapus</button></div>`).join('');
+  openGen(`<h3>Kelola Kategori — ${type==='out'?'Pengeluaran':'Pemasukan'}</h3>
+   <div class="seg" style="margin-bottom:12px"><button onclick="manageCats('out')" class="${type==='out'?'active':''}">Pengeluaran</button><button onclick="manageCats('in')" class="${type==='in'?'active':''}">Pemasukan</button></div>
+   <div class="card" style="max-height:280px;overflow:auto;padding:6px 14px">${list}</div>
+   <label style="margin-top:12px">Tambah kategori baru</label>
+   <div class="grid2"><input id="gCEmoji" maxlength="2" value="🏷️" style="text-align:center;font-size:20px">
+   <input id="gCName" placeholder="Nama kategori"></div>
+   <button class="save-btn" onclick="addCat('${type}')">+ Tambah Kategori</button>`);
+};
+window.addCat=(type)=>{const n=document.getElementById('gCName').value.trim();if(!n)return;
+  const e=document.getElementById('gCEmoji').value.trim()||'🏷️';
+  const item={k:'c'+Date.now(),n,e,c:CAT_COLORS[CATS[type].length%CAT_COLORS.length]};
+  const idx=CATS[type].findIndex(x=>x.k==='lain');if(idx>=0)CATS[type].splice(idx,0,item);else CATS[type].push(item);
+  saveCats();buildCatGrid();fillFilters();manageCats(type);render();};
+window.renameCat=(type,k)=>{const c=CATS[type].find(x=>x.k===k);const v=prompt('Nama kategori:',c.n);if(v&&v.trim()){c.n=v.trim();saveCats();buildCatGrid();fillFilters();manageCats(type);render();}};
+window.delCat=(type,k)=>{
+  if(data.some(t=>t.type===type&&t.cat===k)){alert('Kategori ini masih dipakai transaksi. Pindahkan/hapus transaksinya dulu.');return;}
+  if(CATS[type].length<=1){alert('Minimal harus ada 1 kategori.');return;}
+  if(confirm('Hapus kategori ini?')){CATS[type]=CATS[type].filter(x=>x.k!==k);saveCats();buildCatGrid();fillFilters();manageCats(type);render();}};
 document.getElementById('addGoal').onclick=()=>openGen(`<h3>Tambah Target Tabungan</h3>
   <label>Nama target</label><input id="gGName" placeholder="mis. Dana Darurat">
   <label>Target (Rp)</label><input id="gGTarget" data-money type="tel" inputmode="numeric" placeholder="0">
@@ -672,6 +782,39 @@ document.querySelectorAll('.overlay').forEach(o=>o.onclick=e=>{if(e.target===o)o
   document.getElementById('licenseFooter').innerHTML=
     (nm?'Lisensi untuk: <b style="color:var(--gold)">'+nm.replace(/[<>]/g,'')+'</b><br>':'')+
     'SanguKu © LuarDigital · Lisensi pribadi — dilarang menyebarluaskan atau menjual ulang.';})();
+// ---------- PROFILE UI (Pro) ----------
+const PTYPE={pribadi:'👤',usaha:'🏪'};
+function renderProfileBar(){
+  const bar=document.getElementById('profileBar');
+  if(!PRO){bar.style.display='none';return;}
+  bar.style.display='block';const p=activeProf();
+  document.getElementById('profName').textContent=p.name;
+  document.getElementById('profType').textContent=p.type;
+  document.getElementById('profIcon').textContent=PTYPE[p.type]||'👤';
+}
+function renderProfileList(){
+  document.getElementById('profileList').innerHTML=profiles.map(p=>`
+    <div class="card" style="margin-bottom:8px;display:flex;align-items:center;gap:10px;${p.id===activeProfile?'border-color:var(--gold)':''}">
+      <span style="font-size:20px">${PTYPE[p.type]||'👤'}</span>
+      <div style="flex:1"><b>${p.name}</b> <span class="chip">${p.type}</span>${p.id===activeProfile?' <span class="badge ok">aktif</span>':''}</div>
+      ${p.id===activeProfile?'<button class="mini-btn" onclick="renameProfile()">Ubah</button>':`<button class="mini-btn" onclick="switchProfile('${p.id}')">Pakai</button>`}
+      ${profiles.length>1&&p.id===activeProfile?'<button class="mini-btn" onclick="delProfile()">Hapus</button>':''}
+    </div>`).join('');
+}
+document.getElementById('profileBtn').onclick=()=>{renderProfileList();document.getElementById('ovProfile').classList.add('show');};
+document.getElementById('addProfile').onclick=()=>openGen(`<h3>Tambah Profil</h3>
+  <label>Nama profil</label><input id="gPName" placeholder="mis. Toko Baju / Pribadi">
+  <label>Tipe</label><select id="gPType"><option value="pribadi">👤 Pribadi</option><option value="usaha">🏪 Usaha</option></select>
+  <button class="save-btn" onclick="saveProfile()">Buat & Pakai</button>`);
+window.saveProfile=()=>{const n=document.getElementById('gPName').value.trim();if(!n)return;
+  const id='p'+Date.now();profiles.push({id,name:n,type:document.getElementById('gPType').value});saveProfiles();switchProfile(id);};
+window.renameProfile=()=>{const p=activeProf();const v=prompt('Nama profil:',p.name);if(v&&v.trim()){p.name=v.trim();saveProfiles();renderProfileBar();renderProfileList();}};
+window.delProfile=()=>{if(profiles.length<2){alert('Minimal harus ada 1 profil.');return;}
+  if(confirm('Hapus profil "'+activeProf().name+'" beserta SEMUA datanya?')){
+    ['tx','set','acc','rec','goal','debt'].forEach(k=>localStorage.removeItem(PK(k)));
+    profiles=profiles.filter(p=>p.id!==activeProfile);activeProfile=profiles[0].id;saveProfiles();location.reload();}};
+renderProfileBar();
+
 fillFilters();applyRecurring();render();
 if(!settings)openSettings();
 // PWA service worker (only works when hosted)
