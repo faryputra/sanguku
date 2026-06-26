@@ -120,6 +120,27 @@
   .pill-tabs button.active{background:var(--card2);color:var(--gold);border-color:var(--gold)}
   .thumb{width:42px;height:42px;border-radius:9px;object-fit:cover;border:1px solid var(--line)}
   .hidden{display:none}
+  .tabs button.soon{opacity:.55;cursor:not-allowed;display:inline-flex;align-items:center;gap:6px}
+  .soon-badge{background:#3a2e12;color:var(--gold);font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px}
+  .soon-label{display:none;font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700;padding:8px 14px 2px}
+  .shell{display:block}.content{display:block}
+  /* ===== DESKTOP ===== */
+  @media (min-width:1000px){
+    .wrap{max-width:1180px;padding:18px 26px}
+    header{margin-bottom:18px}
+    .shell{display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:start}
+    .tabs{flex-direction:column;overflow:visible;gap:5px;position:sticky;top:18px;margin:0;
+          background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:12px}
+    .tabs button{width:100%;text-align:left;border:none;background:none;border-radius:10px;padding:11px 14px;font-size:15px}
+    .tabs button.active{background:var(--card2);border:none;color:var(--gold)}
+    .tabs button.soon{justify-content:space-between;width:100%}
+    .soon-label{display:block}
+    .content{min-width:0;max-width:900px}
+    .fab{left:auto;right:42px;bottom:32px}
+    .balance-card .amount{font-size:40px}
+    h2{font-size:17px}
+  }
+  @media (min-width:1340px){ .content{max-width:1000px} }
   .small{font-size:12px;color:var(--muted)}
   .chip{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:99px;
     padding:3px 9px;font-size:11px;color:var(--muted);margin-left:6px}
@@ -144,6 +165,7 @@
     </button>
   </div>
 
+  <div class="shell">
   <div class="tabs" id="tabs">
     <button class="active" data-tab="home">Beranda</button>
     <button data-tab="tx">Transaksi</button>
@@ -155,7 +177,12 @@
     <button data-tab="report">Laporan</button>
     <button data-tab="tips">Saran</button>
     <button data-tab="cats">Kategori</button>
+    <div class="soon-label">SEGERA HADIR</div>
+    <button class="soon" data-soon="Kasir / POS">Kasir <span class="soon-badge">Soon</span></button>
+    <button class="soon" data-soon="Stok &amp; Produk">Stok <span class="soon-badge">Soon</span></button>
+    <button class="soon" data-soon="Data Pelanggan">Pelanggan <span class="soon-badge">Soon</span></button>
   </div>
+  <div class="content">
 
   <!-- HOME -->
   <div id="tab-home">
@@ -260,6 +287,8 @@
     <h2>Kelola Kategori</h2>
     <div id="catTabBody"></div>
   </div>
+  </div><!-- /.content -->
+  </div><!-- /.shell -->
 </div>
 
 <button class="fab" id="fab">+</button>
@@ -575,7 +604,9 @@ function showTab(name){
     document.getElementById('tab-'+t).classList.toggle('hidden',t!==name));
   if(name==='cats')renderCats();
 }
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  if(b.classList.contains('soon')){alert('🔒 '+(b.dataset.soon||'Fitur')+' — segera hadir! Nantikan update berikutnya 😊');return;}
+  showTab(b.dataset.tab);});
 document.querySelectorAll('[data-goto]').forEach(e=>e.onclick=()=>showTab(e.dataset.goto));
 document.getElementById('prevMonth').onclick=()=>{view.setMonth(view.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+1);render();};
