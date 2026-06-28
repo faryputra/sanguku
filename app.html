@@ -502,6 +502,7 @@ const monthTx=()=>data.filter(t=>t.month===mkey(view));
 const accBalance=id=>{const a=accounts.find(x=>x.id===id);let b=a?a.start:0;
   data.forEach(t=>{
     if(t.type==='tf'){if(t.from===id)b-=t.amt;if(t.to===id)b+=t.amt;}
+    else if(t.type==='debt'){if(t.acc===id)b+=(t.dir==='in'?t.amt:-t.amt);}
     else if(t.acc===id)b+=(t.type==='in'?t.amt:-t.amt);
   });return b;};
 const totalBalance=()=>accounts.reduce((s,a)=>s+accBalance(a.id),0);
@@ -583,6 +584,9 @@ function renderTrend(){const ctx=document.getElementById('trendChart');if(!ctx)r
       scales:{x:{ticks:{color:'#8a93a8'},grid:{display:false}},y:{ticks:{color:'#8a93a8',callback:v=>v>=1e6?(v/1e6)+'jt':v>=1e3?(v/1e3)+'rb':v},grid:{color:'#272d3d'}}}}});
 }
 function txRowHTML(t,withAcc){
+  if(t.type==='debt'){const inn=t.dir==='in';return `<div class="row"><div class="ico" style="background:${inn?'#4ade8022':'#f8717122'};color:${inn?'var(--green)':'var(--red)'}">${inn?'🤝':'💸'}</div>
+    <div class="meta"><div class="n">${inn?'Terima piutang':'Bayar utang'}${t.person?': '+t.person:''}</div><div class="d">${accName(t.acc)} · ${tlabel(t)}</div></div>
+    <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
     <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}</div></div>
     <div class="amt">${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
@@ -623,6 +627,7 @@ function renderWallets(){
       <div class="ico" style="background:#e6c06822;color:var(--gold)">${WTYPE[a.type]||'👛'}</div>
       <div class="meta"><div class="n">${a.name}</div><div class="d">${a.type}</div></div>
       <div class="amt">${rp(accBalance(a.id))}</div>
+      <button class="x" onclick="editWallet(${a.id})" title="Edit">✎</button>
       ${accounts.length>1?`<button class="x" onclick="delWallet(${a.id})">🗑</button>`:''}
     </div></div>`).join('');
 }
@@ -704,11 +709,13 @@ function renderAdvice(tin,tout,byCat){
 // ---------- ACTIONS ----------
 window.delTx=id=>{const t=data.find(x=>x.id===id);if(!t)return;
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
+  if(t.type==='debt'&&t.debtId){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=Math.max(0,(d.paidAmt||0)-t.amt);d.paid=d.paidAmt>=d.amt;}}
   lastDeleted=t;data=data.filter(x=>x.id!==id);saveAll();render();showUndo();};
 function showUndo(){const el=document.getElementById('toast');document.getElementById('toastMsg').textContent='Transaksi dihapus';
   el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');lastDeleted=null;},5000);}
 document.getElementById('undoBtn').onclick=()=>{if(!lastDeleted)return;const t=lastDeleted;data.push(t);
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved+=t.amt;}
+  if(t.type==='debt'&&t.debtId){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=(d.paidAmt||0)+t.amt;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}}}
   lastDeleted=null;document.getElementById('toast').classList.remove('show');saveAll();render();};
 window.delWallet=id=>{if(data.some(t=>t.acc===id||t.from===id||t.to===id)){alert('Masih ada transaksi/transfer di dompet ini.');return;}
   if(confirm('Hapus dompet ini?')){accounts=accounts.filter(a=>a.id!==id);saveAll();render();}};
@@ -727,17 +734,27 @@ window.saveSaving=id=>{const n=Number(document.getElementById('gSvAmt').value.re
   g.saved+=n;const d=new Date();
   data.push({id:Date.now(),type:'sav',goal:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
   saveAll();ovGen.classList.remove('show');render();};
-window.delDebt=id=>{if(confirm('Hapus catatan?')){debts=debts.filter(d=>d.id!==id);saveAll();render();}};
-window.toggleDebt=id=>{const d=debts.find(x=>x.id===id);if(d.paid){d.paid=false;d.paidAmt=0;}else{d.paid=true;d.paidAmt=d.amt;}saveAll();render();};
+window.delDebt=id=>{if(confirm('Hapus catatan ini? Riwayat pembayaran yang terhubung ke dompet juga ikut dihapus.')){
+  debts=debts.filter(d=>d.id!==id);data=data.filter(t=>!(t.type==='debt'&&t.debtId===id));saveAll();render();}};
+window.toggleDebt=id=>{const d=debts.find(x=>x.id===id);
+  if(d.paid){d.paid=false;d.paidAmt=data.filter(t=>t.type==='debt'&&t.debtId===id).reduce((s,t)=>s+t.amt,0);}
+  else{d.paid=true;d.paidAmt=d.amt;}saveAll();render();};
 window.payDebt=id=>{const d=debts.find(x=>x.id===id);if(!d)return;const rem=Math.max(0,d.amt-(d.paidAmt||0));
   openGen(`<h3>${d.kind==='utang'?'Bayar cicilan ke':'Terima bayaran dari'} ${d.person}</h3>
   <div class="small" style="margin-bottom:10px">Sisa: <b>${rp(rem)}</b> dari ${rp(d.amt)}</div>
   <label>Jumlah dibayar (Rp)</label><input id="gPayAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+  <label>${d.kind==='utang'?'Bayar dari dompet':'Terima di dompet'}</label>
+  <select id="gPayAcc">${accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name} (${rp(accBalance(a.id))})</option>`).join('')}<option value="none">— Catat saja (tanpa ubah dompet) —</option></select>
   <button class="save-btn" onclick="savePay(${id})">Simpan</button>
   <button class="mini-btn" style="margin-top:8px;width:100%" onclick="savePay(${id},true)">Lunaskan semua sisa (${rp(rem)})</button>`);};
 window.savePay=(id,all)=>{const d=debts.find(x=>x.id===id);if(!d)return;const rem=Math.max(0,d.amt-(d.paidAmt||0));
   let n=all?rem:Number(document.getElementById('gPayAmt').value.replace(/\D/g,''));
-  if(!n)return;n=Math.min(n,rem);d.paidAmt=(d.paidAmt||0)+n;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}
+  if(!n)return;n=Math.min(n,rem);
+  const accSel=document.getElementById('gPayAcc');const useWallet=accSel&&accSel.value!=='none';
+  d.paidAmt=(d.paidAmt||0)+n;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}
+  if(useWallet){const acc=Number(accSel.value);const dt=new Date();
+    data.push({id:Date.now()+Math.random(),type:'debt',dir:d.kind==='piutang'?'in':'out',acc,amt:n,debtId:d.id,person:d.person,
+      date:dt.getDate()+' '+MONTHS[dt.getMonth()].slice(0,3),time:hhmm(dt),ts:dt.getTime(),month:mkey(dt)});}
   saveAll();ovGen.classList.remove('show');render();};
 window.editDebt=id=>{const d=debts.find(x=>x.id===id);if(!d)return;
   openGen(`<h3>Edit ${d.kind==='utang'?'Utang':'Piutang'}</h3>
@@ -943,6 +960,18 @@ document.getElementById('addWallet').onclick=()=>openGen(`<h3>Tambah Dompet</h3>
   <button class="save-btn" onclick="saveWallet()">Simpan</button>`);
 window.saveWallet=()=>{const n=document.getElementById('gName').value.trim();if(!n)return;
   accounts.push({id:Date.now(),name:n,type:document.getElementById('gType').value,start:Number(document.getElementById('gStart').value.replace(/\D/g,''))||0});
+  saveAll();ovGen.classList.remove('show');render();};
+window.editWallet=id=>{const a=accounts.find(x=>x.id===id);if(!a)return;
+  openGen(`<h3>Edit Dompet</h3>
+  <label>Nama</label><input id="gName" value="${(a.name||'').replace(/"/g,'&quot;')}">
+  <label>Jenis</label><select id="gType"><option value="cash">💵 Tunai</option><option value="bank">🏦 Bank</option><option value="ewallet">📱 E-wallet</option></select>
+  <label>Saldo awal</label><input id="gStart" data-money type="tel" inputmode="numeric" value="${Number(a.start||0).toLocaleString('id-ID')}">
+  <div class="small" style="margin-top:6px">Saldo awal = saldo sebelum semua transaksi tercatat. Ubah ini kalau dulu salah ketik.</div>
+  <button class="save-btn" onclick="updateWallet(${id})">Simpan Perubahan</button>`);
+  setTimeout(()=>{document.getElementById('gType').value=a.type;},0);};
+window.updateWallet=id=>{const a=accounts.find(x=>x.id===id);if(!a)return;
+  const n=document.getElementById('gName').value.trim();if(!n)return;
+  a.name=n;a.type=document.getElementById('gType').value;a.start=Number(document.getElementById('gStart').value.replace(/\D/g,''))||0;
   saveAll();ovGen.classList.remove('show');render();};
 // --- Transfer antar dompet ---
 document.getElementById('addTransfer').onclick=()=>{
