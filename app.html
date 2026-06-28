@@ -297,7 +297,7 @@
 <div class="overlay" id="ovTx">
   <div class="sheet">
     <button class="close" data-close>✕</button>
-    <h3>Catat Transaksi</h3>
+    <h3 id="txTitle">Catat Transaksi</h3>
     <div class="seg"><button id="segOut" class="active out">Pengeluaran</button><button id="segIn">Pemasukan</button></div>
     <label>Nominal</label><input type="tel" id="amtInput" placeholder="0" inputmode="numeric">
     <div class="grid2">
@@ -482,7 +482,8 @@ function txRowHTML(t,withAcc){
     ${t.photo?`<img class="thumb" src="${t.photo}">`:''}
     <div class="meta"><div class="n">${t.note||c.n}</div><div class="d">${c.n} · ${t.date}${withAcc?' · '+accName(t.acc):''}</div></div>
     <div class="amt ${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'−'}${rp(t.amt)}</div>
-    <button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
+    <button class="x" onclick="editTx(${t.id})" title="Edit">✎</button>
+    <button class="x" onclick="delTx(${t.id})" title="Hapus">🗑</button></div>`;}
 function renderRecent(){const tx=monthTx().sort((a,b)=>(b.ts||b.id)-(a.ts||a.id)).slice(0,8);
   document.getElementById('recentList').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):'<div class="empty">Belum ada transaksi.</div>';}
 function renderTxAll(){
@@ -634,17 +635,31 @@ document.getElementById('photoInput').onchange=e=>{const f=e.target.files[0];if(
   if(f.size>2_000_000){alert('Foto terlalu besar (maks ~2MB).');e.target.value='';return;}
   const r=new FileReader();r.onload=()=>{curPhoto=r.result;document.getElementById('photoPrev').innerHTML=`<img class="thumb" src="${curPhoto}" style="width:64px;height:64px;margin-bottom:10px">`;};r.readAsDataURL(f);};
 document.getElementById('fab').onclick=()=>{
+  editId=null;document.getElementById('txTitle').textContent='Catat Transaksi';document.getElementById('saveBtn').textContent='Simpan';
   document.getElementById('amtInput').value='';document.getElementById('noteInput').value='';
   document.getElementById('dateInput').value=new Date().toISOString().slice(0,10);
   document.getElementById('photoInput').value='';document.getElementById('photoPrev').innerHTML='';curPhoto='';
   fillAccSelect(document.getElementById('accInput'));setType('out');ovTx.classList.add('show');};
+function editTx(id){const t=data.find(x=>x.id===id);if(!t)return;
+  editId=id;document.getElementById('txTitle').textContent='Edit Transaksi';document.getElementById('saveBtn').textContent='Simpan Perubahan';
+  fillAccSelect(document.getElementById('accInput'));setType(t.type);curCat=t.cat;buildCatGrid();
+  document.getElementById('amtInput').value=Number(t.amt).toLocaleString('id-ID');
+  document.getElementById('noteInput').value=t.note||'';
+  const dd=t.ts?new Date(t.ts):new Date();
+  document.getElementById('dateInput').value=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0');
+  document.getElementById('accInput').value=t.acc;
+  curPhoto=t.photo||'';document.getElementById('photoInput').value='';
+  document.getElementById('photoPrev').innerHTML=curPhoto?`<img class="thumb" src="${curPhoto}" style="width:64px;height:64px;margin-bottom:10px">`:'';
+  ovTx.classList.add('show');}
 document.getElementById('saveBtn').onclick=()=>{
   const amt=Number(document.getElementById('amtInput').value.replace(/\D/g,''));
   if(!amt){document.getElementById('amtInput').focus();return;}
   const dv=document.getElementById('dateInput').value;const d=dv?new Date(dv+'T00:00:00'):new Date();
-  data.push({id:Date.now(),type:curType,cat:curCat,amt,note:document.getElementById('noteInput').value.trim(),
+  const fields={type:curType,cat:curCat,amt,note:document.getElementById('noteInput').value.trim(),
     acc:Number(document.getElementById('accInput').value),photo:curPhoto||'',
-    date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),ts:d.getTime(),month:mkey(d)});
+    date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),ts:d.getTime(),month:mkey(d)};
+  if(editId!=null){const t=data.find(x=>x.id===editId);if(t)Object.assign(t,fields);editId=null;}
+  else data.push({id:Date.now(),...fields});
   saveTx();ovTx.classList.remove('show');render();};
 
 // ---------- SETTINGS ----------
