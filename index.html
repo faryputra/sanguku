@@ -584,8 +584,10 @@ function renderTrend(){const ctx=document.getElementById('trendChart');if(!ctx)r
       scales:{x:{ticks:{color:'#8a93a8'},grid:{display:false}},y:{ticks:{color:'#8a93a8',callback:v=>v>=1e6?(v/1e6)+'jt':v>=1e3?(v/1e3)+'rb':v},grid:{color:'#272d3d'}}}}});
 }
 function txRowHTML(t,withAcc){
-  if(t.type==='debt'){const inn=t.dir==='in';return `<div class="row"><div class="ico" style="background:${inn?'#4ade8022':'#f8717122'};color:${inn?'var(--green)':'var(--red)'}">${inn?'🤝':'💸'}</div>
-    <div class="meta"><div class="n">${inn?'Terima piutang':'Bayar utang'}${t.person?': '+t.person:''}</div><div class="d">${accName(t.acc)} · ${tlabel(t)}</div></div>
+  if(t.type==='debt'){const inn=t.dir==='in';
+    let lbl=t.kind?(t.origin?(t.kind==='piutang'?'Beri pinjaman':'Terima pinjaman'):(t.kind==='piutang'?'Terima piutang':'Bayar utang')):(inn?'Terima piutang':'Bayar utang');
+    return `<div class="row"><div class="ico" style="background:${inn?'#4ade8022':'#f8717122'};color:${inn?'var(--green)':'var(--red)'}">${inn?'🤝':'💸'}</div>
+    <div class="meta"><div class="n">${lbl}${t.person?': '+t.person:''}</div><div class="d">${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
     <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}</div></div>
@@ -709,13 +711,13 @@ function renderAdvice(tin,tout,byCat){
 // ---------- ACTIONS ----------
 window.delTx=id=>{const t=data.find(x=>x.id===id);if(!t)return;
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
-  if(t.type==='debt'&&t.debtId){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=Math.max(0,(d.paidAmt||0)-t.amt);d.paid=d.paidAmt>=d.amt;}}
+  if(t.type==='debt'&&t.debtId&&!t.origin){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=Math.max(0,(d.paidAmt||0)-t.amt);d.paid=d.paidAmt>=d.amt;}}
   lastDeleted=t;data=data.filter(x=>x.id!==id);saveAll();render();showUndo();};
 function showUndo(){const el=document.getElementById('toast');document.getElementById('toastMsg').textContent='Transaksi dihapus';
   el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');lastDeleted=null;},5000);}
 document.getElementById('undoBtn').onclick=()=>{if(!lastDeleted)return;const t=lastDeleted;data.push(t);
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved+=t.amt;}
-  if(t.type==='debt'&&t.debtId){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=(d.paidAmt||0)+t.amt;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}}}
+  if(t.type==='debt'&&t.debtId&&!t.origin){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=(d.paidAmt||0)+t.amt;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}}}
   lastDeleted=null;document.getElementById('toast').classList.remove('show');saveAll();render();};
 window.delWallet=id=>{if(data.some(t=>t.acc===id||t.from===id||t.to===id)){alert('Masih ada transaksi/transfer di dompet ini.');return;}
   if(confirm('Hapus dompet ini?')){accounts=accounts.filter(a=>a.id!==id);saveAll();render();}};
@@ -737,7 +739,7 @@ window.saveSaving=id=>{const n=Number(document.getElementById('gSvAmt').value.re
 window.delDebt=id=>{if(confirm('Hapus catatan ini? Riwayat pembayaran yang terhubung ke dompet juga ikut dihapus.')){
   debts=debts.filter(d=>d.id!==id);data=data.filter(t=>!(t.type==='debt'&&t.debtId===id));saveAll();render();}};
 window.toggleDebt=id=>{const d=debts.find(x=>x.id===id);
-  if(d.paid){d.paid=false;d.paidAmt=data.filter(t=>t.type==='debt'&&t.debtId===id).reduce((s,t)=>s+t.amt,0);}
+  if(d.paid){d.paid=false;d.paidAmt=data.filter(t=>t.type==='debt'&&t.debtId===id&&!t.origin).reduce((s,t)=>s+t.amt,0);}
   else{d.paid=true;d.paidAmt=d.amt;}saveAll();render();};
 window.payDebt=id=>{const d=debts.find(x=>x.id===id);if(!d)return;const rem=Math.max(0,d.amt-(d.paidAmt||0));
   openGen(`<h3>${d.kind==='utang'?'Bayar cicilan ke':'Terima bayaran dari'} ${d.person}</h3>
@@ -753,7 +755,7 @@ window.savePay=(id,all)=>{const d=debts.find(x=>x.id===id);if(!d)return;const re
   const accSel=document.getElementById('gPayAcc');const useWallet=accSel&&accSel.value!=='none';
   d.paidAmt=(d.paidAmt||0)+n;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}
   if(useWallet){const acc=Number(accSel.value);const dt=new Date();
-    data.push({id:Date.now()+Math.random(),type:'debt',dir:d.kind==='piutang'?'in':'out',acc,amt:n,debtId:d.id,person:d.person,
+    data.push({id:Date.now()+Math.random(),type:'debt',kind:d.kind,dir:d.kind==='piutang'?'in':'out',acc,amt:n,debtId:d.id,person:d.person,
       date:dt.getDate()+' '+MONTHS[dt.getMonth()].slice(0,3),time:hhmm(dt),ts:dt.getTime(),month:mkey(dt)});}
   saveAll();ovGen.classList.remove('show');render();};
 window.editDebt=id=>{const d=debts.find(x=>x.id===id);if(!d)return;
@@ -1043,10 +1045,18 @@ document.getElementById('addDebt').onclick=()=>openGen(`<h3>Tambah ${debtKind===
   <label>Nominal (Rp)</label><input id="gDAmt" data-money type="tel" inputmode="numeric" placeholder="0">
   <label>Catatan (opsional)</label><input id="gDNote" placeholder="mis. pinjam buat bensin">
   <label>Jatuh tempo (opsional)</label><input id="gDDue" type="date">
+  <label>${debtKind==='piutang'?'Ambil dari dompet (uang yang kamu pinjamkan)':'Masuk ke dompet (uang yang kamu terima)'}</label>
+  <select id="gDAcc">${accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name} (${rp(accBalance(a.id))})</option>`).join('')}<option value="none">— Catat saja (tanpa ubah dompet) —</option></select>
   <button class="save-btn" onclick="saveDebt()">Simpan</button>`);
 window.saveDebt=()=>{const p=document.getElementById('gDPerson').value.trim();const a=Number(document.getElementById('gDAmt').value.replace(/\D/g,''));
-  if(!p||!a)return;debts.push({id:Date.now(),kind:debtKind,person:p,amt:a,note:document.getElementById('gDNote').value.trim(),
-    due:document.getElementById('gDDue').value,paid:false,paidAmt:0});saveAll();ovGen.classList.remove('show');render();};
+  if(!p||!a)return;const id=Date.now();
+  debts.push({id,kind:debtKind,person:p,amt:a,note:document.getElementById('gDNote').value.trim(),
+    due:document.getElementById('gDDue').value,paid:false,paidAmt:0});
+  const accSel=document.getElementById('gDAcc');
+  if(accSel&&accSel.value!=='none'){const acc=Number(accSel.value);const dt=new Date();
+    data.push({id:Date.now()+Math.random(),type:'debt',origin:true,kind:debtKind,dir:debtKind==='piutang'?'out':'in',acc,amt:a,debtId:id,person:p,
+      date:dt.getDate()+' '+MONTHS[dt.getMonth()].slice(0,3),time:hhmm(dt),ts:dt.getTime(),month:mkey(dt)});}
+  saveAll();ovGen.classList.remove('show');render();};
 document.getElementById('addRecur').onclick=()=>openGen(`<h3>Transaksi Berulang</h3>
   <div class="seg"><button id="rSegOut" class="active out">Pengeluaran</button><button id="rSegIn">Pemasukan</button></div>
   <label>Nominal (Rp)</label><input id="gRAmt" data-money type="tel" inputmode="numeric" placeholder="0">
