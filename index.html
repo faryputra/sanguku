@@ -589,7 +589,7 @@ function txRowHTML(t,withAcc){
     <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
     <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}</div></div>
-    <div class="amt">${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
+    <div class="amt">${rp(t.amt)}</div><button class="x" onclick="editTransfer(${t.id})" title="Edit">✎</button><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#e6c06822;color:var(--gold)">🐷</div>
     <div class="meta"><div class="n">Nabung${g?': '+g.name:''}</div><div class="d">dari ${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt out">−${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
@@ -974,22 +974,31 @@ window.updateWallet=id=>{const a=accounts.find(x=>x.id===id);if(!a)return;
   a.name=n;a.type=document.getElementById('gType').value;a.start=Number(document.getElementById('gStart').value.replace(/\D/g,''))||0;
   saveAll();ovGen.classList.remove('show');render();};
 // --- Transfer antar dompet ---
-document.getElementById('addTransfer').onclick=()=>{
+let editTfId=null;
+function openTransferSheet(pref){
   if(accounts.length<2){alert('Butuh minimal 2 dompet untuk transfer.');return;}
   const opts=accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name} (${rp(accBalance(a.id))})</option>`).join('');
-  openGen(`<h3>Transfer Antar Dompet</h3>
+  openGen(`<h3>${pref?'Edit Transfer':'Transfer Antar Dompet'}</h3>
    <label>Dari</label><select id="gTFrom">${opts}</select>
    <label>Ke</label><select id="gTTo">${opts}</select>
-   <label>Jumlah (Rp)</label><input id="gTAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+   <label>Jumlah (Rp)</label><input id="gTAmt" data-money type="tel" inputmode="numeric" placeholder="0" value="${pref?Number(pref.amt).toLocaleString('id-ID'):''}">
    <label>Tanggal</label><input id="gTDate" type="date">
-   <button class="save-btn" onclick="saveTransfer()">Transfer</button>`);
-  setTimeout(()=>{document.getElementById('gTDate').value=new Date().toISOString().slice(0,10);if(accounts[1])document.getElementById('gTTo').value=accounts[1].id;},0);
-};
+   <button class="save-btn" onclick="saveTransfer()">${pref?'Simpan Perubahan':'Transfer'}</button>`);
+  setTimeout(()=>{const dd=pref&&pref.ts?new Date(pref.ts):new Date();
+    document.getElementById('gTDate').value=dd.getFullYear()+'-'+pad2(dd.getMonth()+1)+'-'+pad2(dd.getDate());
+    if(pref){document.getElementById('gTFrom').value=pref.from;document.getElementById('gTTo').value=pref.to;}
+    else if(accounts[1])document.getElementById('gTTo').value=accounts[1].id;},0);
+}
+document.getElementById('addTransfer').onclick=()=>{editTfId=null;openTransferSheet(null);};
+window.editTransfer=id=>{const t=data.find(x=>x.id===id);if(!t||t.type!=='tf')return;editTfId=id;openTransferSheet(t);};
 window.saveTransfer=()=>{const from=Number(document.getElementById('gTFrom').value),to=Number(document.getElementById('gTTo').value);
   const amt=Number(document.getElementById('gTAmt').value.replace(/\D/g,''));
   if(!amt)return; if(from===to){alert('Pilih dompet asal & tujuan yang berbeda.');return;}
   const dv=document.getElementById('gTDate').value;const d=dv?new Date(dv+'T00:00:00'):new Date();
-  data.push({id:Date.now(),type:'tf',from,to,amt,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
+  const editing=editTfId!=null;const old=editing?data.find(x=>x.id===editTfId):null;
+  if(editing&&old&&old.ts){const o=new Date(old.ts);d.setHours(o.getHours(),o.getMinutes(),0,0);}else{const nt=new Date();d.setHours(nt.getHours(),nt.getMinutes(),0,0);}
+  const f={type:'tf',from,to,amt,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)};
+  if(editing){if(old)Object.assign(old,f);editTfId=null;}else data.push({id:Date.now(),...f});
   saveTx();ovGen.classList.remove('show');render();};
 // --- Kelola kategori ---
 // --- Tab Kategori ---
