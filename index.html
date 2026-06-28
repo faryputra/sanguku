@@ -146,6 +146,15 @@
   .accent-row button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer}
   .accent-row button.sel{border-color:var(--txt);box-shadow:0 0 0 2px var(--bg) inset}
   .flt-l{font-size:11px;color:var(--muted);margin-bottom:2px;display:block}
+  html.light{--bg:#f3f5fa;--bg2:#ffffff;--card:#ffffff;--card2:#eef1f7;--line:#e2e6ef;
+    --txt:#1b2233;--muted:#5f6b80;--green:#16a34a;--red:#dc2626;--blue:#2563eb}
+  html.light body{background:var(--bg)}
+  html.light .balance-card{background:linear-gradient(135deg,#ffffff,#eef1f7)}
+  html.light .card,html.light .stat{box-shadow:0 1px 3px rgba(20,30,60,.06)}
+  html.light .banner{background:#fdf6e3}
+  html.light .badge.ok{background:#dcfce7;color:#15803d}
+  html.light .badge.warn{background:#fef3c7;color:#a16207}
+  html.light .badge.over{background:#fee2e2;color:#b91c1c}
   .tabs button.soon{opacity:.55;cursor:not-allowed;display:inline-flex;align-items:center;gap:6px}
   .soon-badge{background:#3a2e12;color:var(--gold);font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px}
   .soon-label{display:none;font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700;padding:8px 14px 2px}
@@ -386,6 +395,8 @@
     <label style="margin-top:14px">Pengingat harian</label>
     <div class="seg"><button id="remOn" class="active">Aktif</button><button id="remOff">Mati</button></div>
     <button class="ghost-btn" id="notifBtn">🔔 Izinkan notifikasi browser</button>
+    <label style="margin-top:14px">Tema tampilan</label>
+    <div class="seg"><button id="themeDark" class="active">🌙 Gelap</button><button id="themeLight">☀️ Terang</button></div>
     <label style="margin-top:14px">Warna aksen</label>
     <div class="accent-row" id="accentRow"></div>
     <label style="margin-top:14px">Data</label>
@@ -467,6 +478,9 @@ const tlabel=t=>t.date+(t.time?' · '+t.time:'');
 const ACCENTS={gold:['#e6c068','#c89b3f'],blue:['#60a5fa','#3b82f6'],green:['#4ade80','#22c55e'],purple:['#a78bfa','#7c3aed'],pink:['#f472b6','#db2777'],teal:['#2dd4bf','#0d9488']};
 function applyAccent(name){const a=ACCENTS[name]||ACCENTS.gold;document.documentElement.style.setProperty('--gold',a[0]);document.documentElement.style.setProperty('--gold2',a[1]);}
 let accent=localStorage.getItem('sg_accent')||'gold';applyAccent(accent);
+let theme=localStorage.getItem('sg_theme')||'dark';
+function applyTheme(t){document.documentElement.classList.toggle('light',t==='light');}
+applyTheme(theme);
 let favs=L(PK('fav'),'[]');const saveFavs=()=>localStorage.setItem(PK('fav'),JSON.stringify(favs));
 let lastDeleted=null,toastTimer=null;
 function dueBadge(d){if(d.paid||!d.due)return '';
@@ -849,12 +863,16 @@ function openSettings(){document.getElementById('setTitle').textContent=settings
   document.getElementById('remOn').className=on?'active':'';document.getElementById('remOff').className=on?'':'active';
   const roll=settings&&settings.rollover;
   document.getElementById('rollOn').className=roll?'active':'';document.getElementById('rollOff').className=roll?'':'active';
-  markAccent();buildBudgetInputs();ovSet.classList.add('show');}
+  markAccent();markTheme();buildBudgetInputs();ovSet.classList.add('show');}
 document.getElementById('monthPill').onclick=openSettings;
 document.getElementById('remOn').onclick=()=>{document.getElementById('remOn').classList.add('active');document.getElementById('remOff').classList.remove('active');};
 document.getElementById('remOff').onclick=()=>{document.getElementById('remOff').classList.add('active');document.getElementById('remOn').classList.remove('active');};
 document.getElementById('rollOn').onclick=()=>{document.getElementById('rollOn').classList.add('active');document.getElementById('rollOff').classList.remove('active');};
 document.getElementById('rollOff').onclick=()=>{document.getElementById('rollOff').classList.add('active');document.getElementById('rollOn').classList.remove('active');};
+function markTheme(){document.getElementById('themeDark').className=theme==='dark'?'active':'';document.getElementById('themeLight').className=theme==='light'?'active':'';}
+function setTheme(t){theme=t;localStorage.setItem('sg_theme',t);applyTheme(t);markTheme();}
+document.getElementById('themeDark').onclick=()=>setTheme('dark');
+document.getElementById('themeLight').onclick=()=>setTheme('light');
 document.getElementById('accentRow').innerHTML=Object.keys(ACCENTS).map(k=>`<button type="button" data-acc="${k}" style="background:${ACCENTS[k][0]}"></button>`).join('');
 function markAccent(){document.querySelectorAll('#accentRow button').forEach(b=>b.classList.toggle('sel',b.dataset.acc===accent));}
 document.querySelectorAll('#accentRow button').forEach(b=>b.onclick=()=>{accent=b.dataset.acc;localStorage.setItem('sg_accent',accent);applyAccent(accent);markAccent();render();});
