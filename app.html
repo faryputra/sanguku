@@ -146,6 +146,11 @@
   .accent-row button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer}
   .accent-row button.sel{border-color:var(--txt);box-shadow:0 0 0 2px var(--bg) inset}
   .flt-l{font-size:11px;color:var(--muted);margin-bottom:2px;display:block}
+  .ico.brand{font-size:11px;font-weight:800;letter-spacing:.2px;color:#fff}
+  .brand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px;max-height:210px;overflow-y:auto}
+  .brand-grid button{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:7px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:10px;color:var(--muted)}
+  .brand-grid button.sel{border-color:var(--gold);color:var(--txt);background:var(--card2)}
+  .bdot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff}
   html.light{--bg:#f3f5fa;--bg2:#ffffff;--card:#ffffff;--card2:#eef1f7;--line:#e2e6ef;
     --txt:#1b2233;--muted:#5f6b80;--green:#16a34a;--red:#dc2626;--blue:#2563eb}
   html.light body{background:var(--bg)}
@@ -437,6 +442,25 @@ const CAT_COLORS=['#f59e0b','#b45309','#60a5fa','#f472b6','#a78bfa','#34d399','#
 const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const CUR={IDR:'Rp',USD:'$',EUR:'€',SGD:'S$',MYR:'RM',JPY:'¥'};
 const WTYPE={cash:'💵',bank:'🏦',ewallet:'📱'};
+const BRANDS={
+  bca:{n:'BCA',s:'BCA',bg:'#1c5fab',t:'bank'},mandiri:{n:'Mandiri',s:'MDR',bg:'#16386e',t:'bank'},
+  bni:{n:'BNI',s:'BNI',bg:'#ee6c0b',t:'bank'},bri:{n:'BRI',s:'BRI',bg:'#00529c',t:'bank'},
+  bsi:{n:'BSI',s:'BSI',bg:'#00a39d',t:'bank'},cimb:{n:'CIMB',s:'CIMB',bg:'#7a1518',t:'bank'},
+  permata:{n:'Permata',s:'PMT',bg:'#1f9e8e',t:'bank'},danamon:{n:'Danamon',s:'DNM',bg:'#005baa',t:'bank'},
+  btn:{n:'BTN',s:'BTN',bg:'#f7941e',t:'bank'},jago:{n:'Jago',s:'Jago',bg:'#ffc20e',fg:'#222',t:'bank'},
+  blu:{n:'blu',s:'blu',bg:'#1b6cf0',t:'bank'},seabank:{n:'SeaBank',s:'Sea',bg:'#ff5b2e',t:'bank'},
+  jenius:{n:'Jenius',s:'Jen',bg:'#00b9c1',t:'bank'},gopay:{n:'GoPay',s:'GO',bg:'#00aa13',t:'ewallet'},
+  ovo:{n:'OVO',s:'OVO',bg:'#4c2a86',t:'ewallet'},dana:{n:'DANA',s:'DANA',bg:'#118eea',t:'ewallet'},
+  shopeepay:{n:'ShopeePay',s:'SPay',bg:'#ee4d2d',t:'ewallet'},linkaja:{n:'LinkAja',s:'Link',bg:'#e22128',t:'ewallet'},
+  cash:{n:'Tunai',s:'💵',bg:'#caa24a',fg:'#1a1408',t:'cash'}
+};
+function walletIcon(a){const b=a.brand&&BRANDS[a.brand];
+  if(b)return `<div class="ico brand" style="background:${b.bg};color:${b.fg||'#fff'}">${b.s}</div>`;
+  return `<div class="ico" style="background:#e6c06822;color:var(--gold)">${WTYPE[a.type]||'👛'}</div>`;}
+function buildBrandGrid(){const g=document.getElementById('brandGrid');if(!g)return;
+  g.innerHTML=`<button type="button" data-b="" class="${selBrand?'':'sel'}"><span class="bdot" style="background:#3a4258">—</span>Tanpa</button>`+
+    Object.keys(BRANDS).map(k=>`<button type="button" data-b="${k}" class="${selBrand===k?'sel':''}"><span class="bdot" style="background:${BRANDS[k].bg};color:${BRANDS[k].fg||'#fff'}">${BRANDS[k].s}</span>${BRANDS[k].n}</button>`).join('');
+  g.querySelectorAll('button').forEach(b=>b.onclick=()=>{selBrand=b.dataset.b;const br=BRANDS[selBrand];const ty=document.getElementById('gType');if(br&&ty)ty.value=br.t;buildBrandGrid();});}
 const L=(k,d)=>JSON.parse(localStorage.getItem(k)||d);
 // ---------- PRO + MULTI-PROFIL (fondasi) ----------
 const qp=new URLSearchParams(location.search);
@@ -485,6 +509,8 @@ function applyTheme(t){document.documentElement.classList.toggle('light',t==='li
 applyTheme(theme);
 let favs=L(PK('fav'),'[]');const saveFavs=()=>localStorage.setItem(PK('fav'),JSON.stringify(favs));
 let lastDeleted=null,toastTimer=null;
+let hidePaidDebt=localStorage.getItem('sg_hidepaid')==='1';
+let selBrand='';
 function dueBadge(d){if(d.paid||!d.due)return '';
   const t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
   const due=new Date(d.due+'T00:00:00').getTime();const days=Math.round((due-t0)/86400000);
@@ -509,7 +535,8 @@ const totalBalance=()=>accounts.reduce((s,a)=>s+accBalance(a.id),0);
 const remain=d=>Math.max(0,d.amt-(d.paidAmt||0));
 const piutangTotal=()=>debts.filter(d=>d.kind==='piutang'&&!d.paid).reduce((s,d)=>s+remain(d),0);
 const utangTotal=()=>debts.filter(d=>d.kind==='utang'&&!d.paid).reduce((s,d)=>s+remain(d),0);
-const netWorth=()=>totalBalance()+piutangTotal()-utangTotal();
+const goalsSaved=()=>goals.reduce((s,g)=>s+(g.saved||0),0);
+const netWorth=()=>totalBalance()+goalsSaved()+piutangTotal()-utangTotal();
 
 // ---------- RECURRING auto-apply ----------
 function applyRecurring(){
@@ -538,7 +565,7 @@ function render(){
   const tb=document.getElementById('totalBalance');
   tb.textContent=rp(totalBalance());tb.className='amount'+(totalBalance()<0?' neg':'');
   const nwl=document.getElementById('netWorthLine');const nw=netWorth();
-  nwl.innerHTML=(utangTotal()||piutangTotal())?`Kekayaan bersih: <b style="color:${nw<0?'var(--red)':'var(--gold)'}">${rp(nw)}</b> <span style="color:var(--muted)">(saldo + piutang − utang)</span>`:'';
+  nwl.innerHTML=(utangTotal()||piutangTotal()||goalsSaved())?`Kekayaan bersih: <b style="color:${nw<0?'var(--red)':'var(--gold)'}">${rp(nw)}</b> <span style="color:var(--muted)">(saldo${goalsSaved()?' + tabungan':''}${piutangTotal()?' + piutang':''}${utangTotal()?' − utang':''})</span>`:'';
   document.getElementById('totalIn').textContent=rp(tin);
   document.getElementById('totalOut').textContent=rp(tout);
   const tdKey=now.toDateString();const td=data.filter(t=>t.ts&&new Date(t.ts).toDateString()===tdKey);
@@ -626,8 +653,8 @@ function renderTxAll(){
 function renderWallets(){
   document.getElementById('walletList').innerHTML=accounts.map(a=>`
     <div class="card" style="margin-bottom:10px"><div class="row" style="border:none;padding:0">
-      <div class="ico" style="background:#e6c06822;color:var(--gold)">${WTYPE[a.type]||'👛'}</div>
-      <div class="meta"><div class="n">${a.name}</div><div class="d">${a.type}</div></div>
+      ${walletIcon(a)}
+      <div class="meta"><div class="n">${a.name}</div><div class="d">${a.brand&&BRANDS[a.brand]?BRANDS[a.brand].n:a.type}</div></div>
       <div class="amt">${rp(accBalance(a.id))}</div>
       <button class="x" onclick="editWallet(${a.id})" title="Edit">✎</button>
       ${accounts.length>1?`<button class="x" onclick="delWallet(${a.id})">🗑</button>`:''}
@@ -647,11 +674,15 @@ function renderGoals(){
     ||'<div class="card"><div class="small">Belum ada target tabungan.</div></div>';
 }
 function renderDebts(){
-  const list=debts.filter(d=>d.kind===debtKind);
+  const all=debts.filter(d=>d.kind===debtKind);
+  const isDone=d=>d.paid||(d.amt-(d.paidAmt||0))<=0;
+  const paidCount=all.filter(isDone).length;
+  const list=hidePaidDebt?all.filter(d=>!isDone(d)):all;
   const pt=piutangTotal(),ut=utangTotal();
+  const toggle=paidCount?`<div style="text-align:right;margin-bottom:8px"><span class="link" onclick="toggleHidePaid()">${hidePaidDebt?'👁 Tampilkan lunas ('+paidCount+')':'🙈 Sembunyikan lunas ('+paidCount+')'}</span></div>`:'';
   document.getElementById('debtList').innerHTML=
     `<div class="stat-row"><div class="stat"><div class="t">Piutang belum lunas</div><div class="v in">${rp(pt)}</div></div>
-     <div class="stat"><div class="t">Utang belum lunas</div><div class="v out">${rp(ut)}</div></div></div>`
+     <div class="stat"><div class="t">Utang belum lunas</div><div class="v out">${rp(ut)}</div></div></div>`+toggle
     +(list.length?list.map(d=>{const pa=d.paidAmt||0;const rem=Math.max(0,d.amt-pa);const done=d.paid||rem<=0;
       const pct=d.amt?Math.min(100,Math.round(pa/d.amt*100)):0;
       return `
@@ -666,8 +697,9 @@ function renderDebts(){
       <button class="mini-btn" onclick="toggleDebt(${d.id})">${done?'Tandai belum':'Lunaskan'}</button>
       <button class="mini-btn" onclick="editDebt(${d.id})">Edit</button>
       <button class="mini-btn" onclick="delDebt(${d.id})">Hapus</button></div></div>`;}).join('')
-    :'<div class="empty">Belum ada catatan.</div>');
+    :`<div class="empty">${hidePaidDebt&&paidCount?'Semua sudah lunas (disembunyikan).':'Belum ada catatan.'}</div>`);
 }
+window.toggleHidePaid=()=>{hidePaidDebt=!hidePaidDebt;localStorage.setItem('sg_hidepaid',hidePaidDebt?'1':'0');render();};
 function renderRecur(){
   document.getElementById('recurList').innerHTML=recurring.length?recurring.map(r=>{const c=catInfo(r.type,r.cat);
     return `<div class="card" style="margin-bottom:10px"><div class="row" style="border:none;padding:0">
@@ -955,25 +987,27 @@ document.getElementById('impFile').onchange=e=>{const f=e.target.files[0];if(!f)
 const ovGen=document.getElementById('ovGen');
 function openGen(html){document.getElementById('genBody').innerHTML=html;ovGen.classList.add('show');
   document.querySelectorAll('#genBody input[data-money]').forEach(fmt);}
-document.getElementById('addWallet').onclick=()=>openGen(`<h3>Tambah Dompet</h3>
+document.getElementById('addWallet').onclick=()=>{selBrand='';openGen(`<h3>Tambah Dompet</h3>
   <label>Nama</label><input id="gName" placeholder="mis. BCA / GoPay">
+  <label>Logo Bank / E-wallet (opsional)</label><div class="brand-grid" id="brandGrid"></div>
   <label>Jenis</label><select id="gType"><option value="cash">💵 Tunai</option><option value="bank">🏦 Bank</option><option value="ewallet">📱 E-wallet</option></select>
   <label>Saldo awal</label><input id="gStart" data-money type="tel" inputmode="numeric" placeholder="0">
-  <button class="save-btn" onclick="saveWallet()">Simpan</button>`);
+  <button class="save-btn" onclick="saveWallet()">Simpan</button>`);buildBrandGrid();};
 window.saveWallet=()=>{const n=document.getElementById('gName').value.trim();if(!n)return;
-  accounts.push({id:Date.now(),name:n,type:document.getElementById('gType').value,start:Number(document.getElementById('gStart').value.replace(/\D/g,''))||0});
+  accounts.push({id:Date.now(),name:n,type:document.getElementById('gType').value,start:Number(document.getElementById('gStart').value.replace(/\D/g,''))||0,brand:selBrand||''});
   saveAll();ovGen.classList.remove('show');render();};
-window.editWallet=id=>{const a=accounts.find(x=>x.id===id);if(!a)return;
+window.editWallet=id=>{const a=accounts.find(x=>x.id===id);if(!a)return;selBrand=a.brand||'';
   openGen(`<h3>Edit Dompet</h3>
   <label>Nama</label><input id="gName" value="${(a.name||'').replace(/"/g,'&quot;')}">
+  <label>Logo Bank / E-wallet (opsional)</label><div class="brand-grid" id="brandGrid"></div>
   <label>Jenis</label><select id="gType"><option value="cash">💵 Tunai</option><option value="bank">🏦 Bank</option><option value="ewallet">📱 E-wallet</option></select>
   <label>Saldo awal</label><input id="gStart" data-money type="tel" inputmode="numeric" value="${Number(a.start||0).toLocaleString('id-ID')}">
   <div class="small" style="margin-top:6px">Saldo awal = saldo sebelum semua transaksi tercatat. Ubah ini kalau dulu salah ketik.</div>
   <button class="save-btn" onclick="updateWallet(${id})">Simpan Perubahan</button>`);
-  setTimeout(()=>{document.getElementById('gType').value=a.type;},0);};
+  buildBrandGrid();setTimeout(()=>{document.getElementById('gType').value=a.type;},0);};
 window.updateWallet=id=>{const a=accounts.find(x=>x.id===id);if(!a)return;
   const n=document.getElementById('gName').value.trim();if(!n)return;
-  a.name=n;a.type=document.getElementById('gType').value;a.start=Number(document.getElementById('gStart').value.replace(/\D/g,''))||0;
+  a.name=n;a.type=document.getElementById('gType').value;a.start=Number(document.getElementById('gStart').value.replace(/\D/g,''))||0;a.brand=selBrand||'';
   saveAll();ovGen.classList.remove('show');render();};
 // --- Transfer antar dompet ---
 let editTfId=null;
