@@ -527,7 +527,7 @@ const saveAll=()=>{localStorage.setItem(PK('tx'),JSON.stringify(data));localStor
 const monthTx=()=>data.filter(t=>t.month===mkey(view));
 const accBalance=id=>{const a=accounts.find(x=>x.id===id);let b=a?a.start:0;
   data.forEach(t=>{
-    if(t.type==='tf'){if(t.from===id)b-=t.amt;if(t.to===id)b+=t.amt;}
+    if(t.type==='tf'){if(t.from===id)b-=t.amt+(t.fee||0);if(t.to===id)b+=t.amt;}
     else if(t.type==='debt'){if(t.acc===id)b+=(t.dir==='in'?t.amt:-t.amt);}
     else if(t.acc===id)b+=(t.type==='in'?t.amt:-t.amt);
   });return b;};
@@ -617,7 +617,7 @@ function txRowHTML(t,withAcc){
     <div class="meta"><div class="n">${lbl}${t.person?': '+t.person:''}</div><div class="d">${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
-    <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}</div></div>
+    <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}${t.fee?' · admin '+rp(t.fee):''}</div></div>
     <div class="amt">${rp(t.amt)}</div><button class="x" onclick="editTransfer(${t.id})" title="Edit">✎</button><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#e6c06822;color:var(--gold)">🐷</div>
     <div class="meta"><div class="n">Nabung${g?': '+g.name:''}</div><div class="d">dari ${accName(t.acc)} · ${tlabel(t)}</div></div>
@@ -1018,6 +1018,7 @@ function openTransferSheet(pref){
    <label>Dari</label><select id="gTFrom">${opts}</select>
    <label>Ke</label><select id="gTTo">${opts}</select>
    <label>Jumlah (Rp)</label><input id="gTAmt" data-money type="tel" inputmode="numeric" placeholder="0" value="${pref?Number(pref.amt).toLocaleString('id-ID'):''}">
+   <label>Biaya admin (opsional)</label><input id="gTFee" data-money type="tel" inputmode="numeric" placeholder="0" value="${pref&&pref.fee?Number(pref.fee).toLocaleString('id-ID'):''}">
    <label>Tanggal</label><input id="gTDate" type="date">
    <button class="save-btn" onclick="saveTransfer()">${pref?'Simpan Perubahan':'Transfer'}</button>`);
   setTimeout(()=>{const dd=pref&&pref.ts?new Date(pref.ts):new Date();
@@ -1029,11 +1030,12 @@ document.getElementById('addTransfer').onclick=()=>{editTfId=null;openTransferSh
 window.editTransfer=id=>{const t=data.find(x=>x.id===id);if(!t||t.type!=='tf')return;editTfId=id;openTransferSheet(t);};
 window.saveTransfer=()=>{const from=Number(document.getElementById('gTFrom').value),to=Number(document.getElementById('gTTo').value);
   const amt=Number(document.getElementById('gTAmt').value.replace(/\D/g,''));
+  const fee=Number(document.getElementById('gTFee').value.replace(/\D/g,''))||0;
   if(!amt)return; if(from===to){alert('Pilih dompet asal & tujuan yang berbeda.');return;}
   const dv=document.getElementById('gTDate').value;const d=dv?new Date(dv+'T00:00:00'):new Date();
   const editing=editTfId!=null;const old=editing?data.find(x=>x.id===editTfId):null;
   if(editing&&old&&old.ts){const o=new Date(old.ts);d.setHours(o.getHours(),o.getMinutes(),0,0);}else{const nt=new Date();d.setHours(nt.getHours(),nt.getMinutes(),0,0);}
-  const f={type:'tf',from,to,amt,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)};
+  const f={type:'tf',from,to,amt,fee,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)};
   if(editing){if(old)Object.assign(old,f);editTfId=null;}else data.push({id:Date.now(),...f});
   saveTx();ovGen.classList.remove('show');render();};
 // --- Kelola kategori ---
