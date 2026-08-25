@@ -1297,7 +1297,7 @@ const _setItem=localStorage.setItem.bind(localStorage);
 localStorage.setItem=function(k,v){ _setItem(k,v);
   if(!restoring && currentUser && sb && typeof k==='string' && k.indexOf('sg_')===0 && k!=='sg_lastnotif') scheduleCloudPush(); };
 function cloudSnapshot(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
-  if(k && k.indexOf('sg_')===0 && k!=='sg_lastnotif' && k!=='sg_prelogin_backup') o[k]=localStorage.getItem(k);} return o; }
+  if(k && k.indexOf('sg_')===0 && k!=='sg_lastnotif' && k!=='sg_prelogin_backup' && k!=='sg_synced_uid') o[k]=localStorage.getItem(k);} return o; }
 function cloudRestore(obj){ restoring=true; try{ Object.keys(obj||{}).forEach(function(k){ if(typeof obj[k]==='string') _setItem(k,obj[k]); }); } finally{ restoring=false; } }
 async function pushCloud(){ if(!sb||!currentUser) return; try{ await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:new Date().toISOString()}); }catch(e){} }
 function scheduleCloudPush(){ clearTimeout(cloudTimer); cloudTimer=setTimeout(pushCloud,2500); }
@@ -1307,8 +1307,8 @@ async function afterLoginSync(){
       alert('Email ini belum terdaftar sebagai pembeli SanguKu.\nHubungi admin (WhatsApp 0851-7156-7692) untuk aktivasi akun.'); return; } }
   let row=null;
   try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
-  if(row && row.data && Object.keys(row.data).length){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); location.reload(); }
-  else { await pushCloud(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
+  if(row && row.data && Object.keys(row.data).length){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_uid',currentUser.id); location.reload(); }
+  else { await pushCloud(); _setItem('sg_synced_uid',currentUser.id); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
 async function acctLogin(){ if(!sb){alert('Login butuh koneksi internet.');return;}
   const email=(document.getElementById('acEmail').value||'').trim(), pass=document.getElementById('acPass').value||'';
   if(!email||!pass){alert('Isi email & password.');return;}
@@ -1356,6 +1356,14 @@ if(sb && location.protocol.indexOf('http')===0){
     if(res && res.data && res.data.session){
       currentUser=res.data.session.user;
       if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} location.replace('/login'); return; } }
+      // sinkron pertama kali akun ini di perangkat ini: tarik data dari cloud
+      if(navigator.onLine && localStorage.getItem('sg_synced_uid')!==currentUser.id){
+        let row=null; try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+        if(row && row.data && Object.keys(row.data).length){
+          _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data);
+          _setItem('sg_synced_uid',currentUser.id); location.reload(); return;
+        } else { await pushCloud(); _setItem('sg_synced_uid',currentUser.id); }
+      }
       renderAccount(); try{document.body.style.visibility='';}catch(e){}
     } else { location.replace('/login'); }
   });
