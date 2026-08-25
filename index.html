@@ -137,6 +137,18 @@
   .acct-box .sub{font-size:12px;color:var(--muted);margin-bottom:10px}
   .acct-box .em{color:var(--gold);font-weight:700}
   .acct-box input{margin-bottom:8px}
+  .sidebar{display:block}
+  .acct-nav{margin-bottom:12px}
+  .acct-chip{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:9px 11px;cursor:pointer;width:100%;text-align:left;font-family:inherit;transition:.15s}
+  .acct-chip:hover{border-color:var(--gold)}
+  .acct-chip .av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+    display:grid;place-items:center;color:#1a1408;font-weight:800;flex-shrink:0}
+  .acct-chip .info{min-width:0;flex:1;display:flex;flex-direction:column}
+  .acct-chip .info .n{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
+  .acct-chip .info .s{font-size:11px;color:var(--muted)}
+  .cal-d{cursor:pointer;transition:transform .1s}
+  .cal-d:hover{transform:scale(1.06)}
   .dash-prog{margin-bottom:16px}
   .dash-t{font-weight:700;font-size:15px;margin-bottom:14px}.dash-t span{color:var(--muted);font-weight:500;font-size:12px}
   .prog-top{display:flex;gap:18px;align-items:center}
@@ -234,6 +246,8 @@
   </div>
 
   <div class="shell">
+  <div class="sidebar">
+  <div id="acctNav" class="acct-nav"></div>
   <div class="tabs" id="tabs">
     <button class="active" data-tab="home">Beranda</button>
     <button data-tab="tx">Transaksi</button>
@@ -250,6 +264,7 @@
     <button class="soon" data-soon="Stok &amp; Produk">Stok <span class="soon-badge">Soon</span></button>
     <button class="soon" data-soon="Data Pelanggan">Pelanggan <span class="soon-badge">Soon</span></button>
   </div>
+  </div><!-- /.sidebar -->
   <div class="content">
 
   <!-- HOME -->
@@ -417,7 +432,6 @@
   <div class="sheet">
     <button class="close" data-close>✕</button>
     <h3 id="setTitle">Pengaturan SanguKu ⚙</h3>
-    <div id="acctBox" class="acct-box"></div>
     <label>Gaji / pemasukan rutin per bulan</label><input type="tel" id="gajiInput" inputmode="numeric" placeholder="10.000.000">
     <label>Mata uang</label>
     <select id="curInput">
@@ -449,6 +463,7 @@
 
 <!-- GENERIC SHEET (wallet/goal/debt/recur add) -->
 <div class="overlay" id="ovGen"><div class="sheet"><button class="close" data-close>✕</button><div id="genBody"></div></div></div>
+<div class="overlay" id="ovAcct"><div class="sheet"><button class="close" data-close>✕</button><div id="acctPanel"></div></div></div>
 
 <!-- PROFILE SHEET -->
 <div class="overlay" id="ovProfile"><div class="sheet"><button class="close" data-close>✕</button>
@@ -659,9 +674,11 @@ function renderDash(){
     const bg=v?`rgba(230,192,104,${(0.10+inten*0.55).toFixed(2)})`:'transparent';
     const isT=sameMonth&&now.getDate()===dd;
     const lbl=v?(v>=1e6?(v/1e6).toFixed(1)+'jt':Math.round(v/1e3)+'rb'):'';
-    cells+=`<div class="cal-d${isT?' today':''}" style="background:${bg}" title="${dd}: ${v?rp(v):'—'}"><span>${dd}</span>${lbl?`<em>${lbl}</em>`:''}</div>`;}
+    const iso=view.getFullYear()+'-'+pad2(view.getMonth()+1)+'-'+pad2(dd);
+    cells+=`<div class="cal-d${isT?' today':''}" style="background:${bg}" title="${dd}: ${v?rp(v):'—'} · klik lihat transaksi" onclick="calDay('${iso}')"><span>${dd}</span>${lbl?`<em>${lbl}</em>`:''}</div>`;}
   cal.innerHTML=`<div class="cal-grid">${cells}</div>`;
 }
+window.calDay=function(iso){const f=document.getElementById('fltFrom'),t=document.getElementById('fltTo');if(f)f.value=iso;if(t)t.value=iso;showTab('tx');renderTxAll();window.scrollTo({top:0,behavior:'smooth'});};
 function renderTrend(){const ctx=document.getElementById('trendChart');if(!ctx)return;if(trendChart)trendChart.destroy();
   const labels=[],ins=[],outs=[];
   for(let i=5;i>=0;i--){const d=new Date(view.getFullYear(),view.getMonth()-i,1);const mk=mkey(d);
@@ -1272,7 +1289,10 @@ function dailyNotif(){try{if(!('Notification'in window)||Notification.permission
 const SUPA_URL='https://stxahqcdmrzxopcqeyya.supabase.co';
 const SUPA_ANON='sb_publishable_1EdsbivyQLs-xT_ehe6-XA_PJZ94Vtb';
 let sb=null,currentUser=null,restoring=false,cloudTimer=null;
+const GATING=true; // true = hanya email pembeli (di tabel allowed_emails) yang boleh login. Set false untuk membuka untuk semua.
 try{ if(window.supabase && SUPA_URL) sb=window.supabase.createClient(SUPA_URL,SUPA_ANON); }catch(e){}
+async function isAllowed(){ if(!sb||!currentUser) return false;
+  try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(error) return false; return !!(data&&data.length); }catch(e){ return false; } }
 const _setItem=localStorage.setItem.bind(localStorage);
 localStorage.setItem=function(k,v){ _setItem(k,v);
   if(!restoring && currentUser && sb && typeof k==='string' && k.indexOf('sg_')===0 && k!=='sg_lastnotif') scheduleCloudPush(); };
@@ -1281,10 +1301,14 @@ function cloudSnapshot(){ const o={}; for(let i=0;i<localStorage.length;i++){ co
 function cloudRestore(obj){ restoring=true; try{ Object.keys(obj||{}).forEach(function(k){ if(typeof obj[k]==='string') _setItem(k,obj[k]); }); } finally{ restoring=false; } }
 async function pushCloud(){ if(!sb||!currentUser) return; try{ await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:new Date().toISOString()}); }catch(e){} }
 function scheduleCloudPush(){ clearTimeout(cloudTimer); cloudTimer=setTimeout(pushCloud,2500); }
-async function afterLoginSync(){ let row=null;
+async function afterLoginSync(){
+  if(GATING){ const ok=await isAllowed();
+    if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount();
+      alert('Email ini belum terdaftar sebagai pembeli SanguKu.\nHubungi admin (WhatsApp 0851-7156-7692) untuk aktivasi akun.'); return; } }
+  let row=null;
   try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
   if(row && row.data && Object.keys(row.data).length){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); location.reload(); }
-  else { await pushCloud(); renderAccount(); alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
+  else { await pushCloud(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
 async function acctLogin(){ if(!sb){alert('Login butuh koneksi internet.');return;}
   const email=(document.getElementById('acEmail').value||'').trim(), pass=document.getElementById('acPass').value||'';
   if(!email||!pass){alert('Isi email & password.');return;}
@@ -1306,13 +1330,24 @@ async function acctPull(){ if(!sb||!currentUser) return;
   let row=null; try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
   if(row && row.data){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); location.reload(); }
   else alert('Belum ada data di cloud.'); }
-function renderAccount(){ const box=document.getElementById('acctBox'); if(!box) return;
-  if(!sb){ box.innerHTML='<div class="ttl">☁️ Akun & Sinkron</div><div class="sub">Butuh koneksi internet untuk login.</div>'; return; }
-  if(currentUser){ box.innerHTML='<div class="ttl">☁️ Akun</div><div class="sub">Masuk sebagai <span class="em">'+(currentUser.email||'')+'</span> · data tersinkron otomatis.</div>'
-      +'<div class="grid2"><button class="ghost-btn" style="margin:0" onclick="acctPull()">⬇ Tarik data terbaru</button><button class="ghost-btn" style="margin:0" onclick="acctLogout()">Keluar</button></div>'; }
-  else { box.innerHTML='<div class="ttl">☁️ Masuk / Daftar</div><div class="sub">Login untuk menyimpan & menyinkronkan datamu di semua perangkat.</div>'
-      +'<input id="acEmail" type="email" placeholder="Email" autocomplete="email"><input id="acPass" type="password" placeholder="Password (min. 6)" autocomplete="current-password">'
-      +'<div class="grid2"><button class="ghost-btn" id="acLogin" style="margin:0" onclick="acctLogin()">Masuk</button><button class="ghost-btn" id="acReg" style="margin:0" onclick="acctRegister()">Daftar</button></div>'; } }
+function renderAccount(){
+  const initial=((currentUser&&currentUser.email)?currentUser.email[0]:'☁').toUpperCase();
+  const nav=document.getElementById('acctNav');
+  if(nav){ if(!sb){ nav.innerHTML=''; }
+    else if(currentUser){ nav.innerHTML='<button class="acct-chip" onclick="openAcct()"><span class="av">'+initial+'</span><span class="info"><span class="n">'+currentUser.email+'</span><span class="s">Tersinkron ✓</span></span></button>'; }
+    else { nav.innerHTML='<button class="acct-chip" onclick="openAcct()"><span class="av">☁</span><span class="info"><span class="n">Masuk / Daftar</span><span class="s">Sinkron data cloud</span></span></button>'; } }
+  const box=document.getElementById('acctPanel');
+  if(box){
+    if(!sb){ box.innerHTML='<h3>Akun & Sinkron</h3><div class="acct-box" style="margin:0"><div class="sub">Butuh koneksi internet untuk login.</div></div>'; return; }
+    if(currentUser){ box.innerHTML='<h3>☁️ Akun</h3><div class="acct-box" style="margin:0"><div class="sub">Masuk sebagai <span class="em">'+currentUser.email+'</span> · data tersinkron otomatis di semua perangkat.</div>'
+        +'<button class="ghost-btn" onclick="acctPull()">⬇ Tarik data terbaru dari cloud</button><button class="ghost-btn" style="margin-top:8px" onclick="acctLogout()">Keluar</button></div>'; }
+    else { box.innerHTML='<h3>☁️ Masuk / Daftar</h3><div class="acct-box" style="margin:0"><div class="sub">Login untuk menyimpan & menyinkronkan datamu di semua perangkat.</div>'
+        +'<label style="font-size:13px;color:var(--muted)">Email</label><input id="acEmail" type="email" placeholder="kamu@email.com" autocomplete="email">'
+        +'<label style="font-size:13px;color:var(--muted)">Password</label><input id="acPass" type="password" placeholder="Min. 6 karakter" autocomplete="current-password">'
+        +'<div class="grid2" style="margin-top:8px"><button class="ghost-btn" id="acLogin" style="margin:0" onclick="acctLogin()">Masuk</button><button class="save-btn" id="acReg" style="margin:0" onclick="acctRegister()">Daftar</button></div></div>'; }
+  }
+}
+window.openAcct=function(){ renderAccount(); document.getElementById('ovAcct').classList.add('show'); };
 window.acctLogin=acctLogin;window.acctRegister=acctRegister;window.acctLogout=acctLogout;window.acctPull=acctPull;
 if(sb){ sb.auth.getSession().then(function(res){ if(res && res.data && res.data.session){ currentUser=res.data.session.user; } renderAccount(); }); }
 
