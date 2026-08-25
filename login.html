@@ -57,7 +57,10 @@
     m.style.color=ok?'var(--green)':'var(--red)';
     m.style.background=ok?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)'; }
 
-  async function isAllowed(){ try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(error) return false; return !!(data&&data.length); }catch(e){ return false; } }
+  async function isAllowed(){
+    try{ const {data,error}=await sb.rpc('is_email_allowed'); if(!error && data===true) return true; }catch(e){}
+    try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(!error && data && data.length) return true; }catch(e){}
+    return false; }
 
   async function doLogin(e){
     e.preventDefault();

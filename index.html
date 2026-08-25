@@ -1292,7 +1292,9 @@ let sb=null,currentUser=null,restoring=false,cloudTimer=null;
 const GATING=true; // true = hanya email pembeli (di tabel allowed_emails) yang boleh login. Set false untuk membuka untuk semua.
 try{ if(window.supabase && SUPA_URL) sb=window.supabase.createClient(SUPA_URL,SUPA_ANON); }catch(e){}
 async function isAllowed(){ if(!sb||!currentUser) return false;
-  try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(error) return false; return !!(data&&data.length); }catch(e){ return false; } }
+  try{ const {data,error}=await sb.rpc('is_email_allowed'); if(!error && data===true) return true; }catch(e){}
+  try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(!error && data && data.length) return true; }catch(e){}
+  return false; }
 const _setItem=localStorage.setItem.bind(localStorage);
 localStorage.setItem=function(k,v){ _setItem(k,v);
   if(!restoring && currentUser && sb && typeof k==='string' && k.indexOf('sg_')===0 && k!=='sg_lastnotif') scheduleCloudPush(); };
