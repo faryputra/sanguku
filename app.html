@@ -8,13 +8,15 @@
 <title>SanguKu — Pencatat Keuangan Pribadi</title>
 <link rel="manifest" href="manifest.webmanifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
   :root{
     --bg:#0d0f14;--bg2:#141823;--card:#181d2a;--card2:#1f2433;--line:#272d3d;
     --txt:#e8ebf2;--muted:#8a93a8;--gold:#e6c068;--gold2:#c89b3f;
     --green:#4ade80;--red:#f87171;--blue:#60a5fa;--radius:18px}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--txt);min-height:100vh;
+  body{font-family:'Manrope','Segoe UI',system-ui,-apple-system,sans-serif;color:var(--txt);min-height:100vh;
     background:radial-gradient(1200px 600px at 80% -10%,#1a2030 0%,transparent 60%),var(--bg);padding-bottom:100px}
   .wrap{max-width:540px;margin:0 auto;padding:16px 14px}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -130,6 +132,30 @@
   .quick-date button{flex:1;background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px;font-size:12px;font-weight:600;cursor:pointer}
   .quick-date button:active{background:var(--card2)}
   .today-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin-bottom:16px}
+  .acct-box{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:16px}
+  .acct-box .ttl{font-weight:700;font-size:14px;margin-bottom:4px}
+  .acct-box .sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .acct-box .em{color:var(--gold);font-weight:700}
+  .acct-box input{margin-bottom:8px}
+  .dash-prog{margin-bottom:16px}
+  .dash-t{font-weight:700;font-size:15px;margin-bottom:14px}.dash-t span{color:var(--muted);font-weight:500;font-size:12px}
+  .prog-top{display:flex;gap:18px;align-items:center}
+  .ring{width:82px;height:82px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+    background:conic-gradient(var(--gold) calc(var(--p,0)*1%),var(--line) 0)}
+  .ring-in{width:64px;height:64px;border-radius:50%;background:var(--card);display:grid;place-items:center;text-align:center;font-size:10px;color:var(--muted);line-height:1.3}
+  .ring-in b{font-size:15px;color:var(--txt)}
+  .pbar{margin-bottom:13px}.pbar:last-child{margin-bottom:0}
+  .pbar-h{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;margin-bottom:5px}
+  .pbar-h .m2{color:var(--muted);font-weight:500}
+  .pbar-t{height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+  .pbar-t i{display:block;height:100%;border-radius:99px;transition:width .4s}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+  .cal-h{text-align:center;font-size:10px;color:var(--muted);font-weight:700;padding-bottom:3px}
+  .cal-d{aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;font-size:11px;color:var(--txt);gap:1px}
+  .cal-d.today{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .cal-d span{font-weight:700;opacity:.85}
+  .cal-d em{font-size:8px;color:var(--red);font-style:normal}
   .tc-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
   .tc-n{font-size:14px}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:200;background:var(--card2);
@@ -239,6 +265,9 @@
       <div class="stat"><div class="t">▼ Keluar bulan ini</div><div class="v out" id="totalOut">Rp0</div></div>
     </div>
     <div class="today-card" id="todayCard"></div>
+    <div class="card dash-prog"><div class="dash-t">Progres Pengeluaran <span>· aturan 50/30/20</span></div><div id="progWrap"></div></div>
+    <h2>Aktivitas Bulan Ini</h2>
+    <div class="card"><div id="calHeat"></div></div>
     <h2>Pengeluaran per Kategori</h2>
     <div class="card"><div class="cats" id="catList"><div class="empty">Belum ada data</div></div></div>
     <h2>Target Tabungan <span class="link" data-goto="goal">Lihat semua</span></h2>
@@ -388,6 +417,7 @@
   <div class="sheet">
     <button class="close" data-close>✕</button>
     <h3 id="setTitle">Pengaturan SanguKu ⚙</h3>
+    <div id="acctBox" class="acct-box"></div>
     <label>Gaji / pemasukan rutin per bulan</label><input type="tel" id="gajiInput" inputmode="numeric" placeholder="10.000.000">
     <label>Mata uang</label>
     <select id="curInput">
@@ -594,8 +624,43 @@ function render(){
     return `<div class="cat"><div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
       <div class="meta"><div class="n">${c.n} ${badge}</div><div class="bar"><i style="width:${pct}%;background:${bud&&v>bud?'var(--red)':c.c}"></i></div></div>
       <div class="amt">${rp(v)}</div></div>`;}).join(''):'<div class="empty">Belum ada pengeluaran</div>';
-  fillFilters(); renderRecent(); renderTxAll(); renderWallets(); renderGoals(); renderDebts(); renderRecur(); renderCats();
+  fillFilters(); renderDash(); renderRecent(); renderTxAll(); renderWallets(); renderGoals(); renderDebts(); renderRecur(); renderCats();
   renderReport(sorted,tout); renderTrend(); renderAdvice(tin,tout,byCat);
+}
+function renderDash(){
+  const pw=document.getElementById('progWrap');const cal=document.getElementById('calHeat');if(!pw||!cal)return;
+  const tx=monthTx();
+  const dim=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+  const sameMonth=now.getFullYear()===view.getFullYear()&&now.getMonth()===view.getMonth();
+  const today=sameMonth?now.getDate():dim;
+  const ringPct=Math.round(today/dim*100);
+  // 50/30/20
+  const gaji=settings&&settings.gaji?settings.gaji:0;
+  const NEEDS=['makan','transport','tagihan','sehat'];
+  let needs=0,wants=0;
+  tx.forEach(t=>{if(t.type==='out'){NEEDS.indexOf(t.cat)>=0?needs+=t.amt:wants+=t.amt;}});
+  const sav=tx.filter(t=>t.type==='sav').reduce((s,t)=>s+t.amt,0);
+  const ring=`<div class="ring" style="--p:${ringPct}"><div class="ring-in">Hari<b>${today}/${dim}</b></div></div>`;
+  if(gaji){
+    const bars=[['Kebutuhan',needs,gaji*0.5,'#a78bfa'],['Keinginan',wants,gaji*0.3,'#fb923c'],['Tabungan',sav,gaji*0.2,'#60a5fa']];
+    pw.innerHTML=`<div class="prog-top">${ring}<div style="flex:1">${bars.map(([n,a,tg,c])=>{const p=tg?Math.min(100,Math.round(a/tg*100)):0;const over=a>tg;
+      return `<div class="pbar"><div class="pbar-h"><span style="color:${c}">${n}</span><span class="m2">${over?'⚠ lewat':'aman'} · ${rp(a)}</span></div><div class="pbar-t"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')}</div></div>`;
+  }else{
+    pw.innerHTML=`<div class="prog-top">${ring}<div style="flex:1;color:var(--muted);font-size:13px">Isi <b>gaji/pemasukan rutin</b> di Pengaturan ⚙ untuk melihat progres 50/30/20 (kebutuhan, keinginan, tabungan).</div></div>`;
+  }
+  // calendar heatmap
+  const byDay={};tx.forEach(t=>{if(t.type==='out'&&t.ts){const d=new Date(t.ts).getDate();byDay[d]=(byDay[d]||0)+t.amt;}});
+  const vals=Object.values(byDay);const maxDay=vals.length?Math.max.apply(null,vals):1;
+  const firstDow=new Date(view.getFullYear(),view.getMonth(),1).getDay();
+  const offset=(firstDow+6)%7;
+  let cells=['Sn','Sl','Rb','Km','Jm','Sb','Mg'].map(d=>`<div class="cal-h">${d}</div>`).join('');
+  for(let i=0;i<offset;i++)cells+='<div></div>';
+  for(let dd=1;dd<=dim;dd++){const v=byDay[dd]||0;const inten=v/maxDay;
+    const bg=v?`rgba(230,192,104,${(0.10+inten*0.55).toFixed(2)})`:'transparent';
+    const isT=sameMonth&&now.getDate()===dd;
+    const lbl=v?(v>=1e6?(v/1e6).toFixed(1)+'jt':Math.round(v/1e3)+'rb'):'';
+    cells+=`<div class="cal-d${isT?' today':''}" style="background:${bg}" title="${dd}: ${v?rp(v):'—'}"><span>${dd}</span>${lbl?`<em>${lbl}</em>`:''}</div>`;}
+  cal.innerHTML=`<div class="cal-grid">${cells}</div>`;
 }
 function renderTrend(){const ctx=document.getElementById('trendChart');if(!ctx)return;if(trendChart)trendChart.destroy();
   const labels=[],ins=[],outs=[];
@@ -916,7 +981,7 @@ function openSettings(){document.getElementById('setTitle').textContent=settings
   document.getElementById('remOn').className=on?'active':'';document.getElementById('remOff').className=on?'':'active';
   const roll=settings&&settings.rollover;
   document.getElementById('rollOn').className=roll?'active':'';document.getElementById('rollOff').className=roll?'':'active';
-  markAccent();markTheme();buildBudgetInputs();ovSet.classList.add('show');}
+  markAccent();markTheme();renderAccount();buildBudgetInputs();ovSet.classList.add('show');}
 document.getElementById('monthPill').onclick=openSettings;
 document.getElementById('remOn').onclick=()=>{document.getElementById('remOn').classList.add('active');document.getElementById('remOff').classList.remove('active');};
 document.getElementById('remOff').onclick=()=>{document.getElementById('remOff').classList.add('active');document.getElementById('remOn').classList.remove('active');};
@@ -1203,6 +1268,54 @@ function dailyNotif(){try{if(!('Notification'in window)||Notification.permission
   const tk=now.toDateString();if(localStorage.getItem('sg_lastnotif')===tk)return;
   const hasToday=data.some(t=>t.ts&&new Date(t.ts).toDateString()===tk);
   if(!hasToday){new Notification('SanguKu 📝',{body:'Belum ada catatan hari ini. Yuk catat keuanganmu!'});localStorage.setItem('sg_lastnotif',tk);}}catch(e){}}
+/* ============ AKUN + SINKRON CLOUD (Supabase) ============ */
+const SUPA_URL='https://stxahqcdmrzxopcqeyya.supabase.co';
+const SUPA_ANON='sb_publishable_1EdsbivyQLs-xT_ehe6-XA_PJZ94Vtb';
+let sb=null,currentUser=null,restoring=false,cloudTimer=null;
+try{ if(window.supabase && SUPA_URL) sb=window.supabase.createClient(SUPA_URL,SUPA_ANON); }catch(e){}
+const _setItem=localStorage.setItem.bind(localStorage);
+localStorage.setItem=function(k,v){ _setItem(k,v);
+  if(!restoring && currentUser && sb && typeof k==='string' && k.indexOf('sg_')===0 && k!=='sg_lastnotif') scheduleCloudPush(); };
+function cloudSnapshot(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+  if(k && k.indexOf('sg_')===0 && k!=='sg_lastnotif' && k!=='sg_prelogin_backup') o[k]=localStorage.getItem(k);} return o; }
+function cloudRestore(obj){ restoring=true; try{ Object.keys(obj||{}).forEach(function(k){ if(typeof obj[k]==='string') _setItem(k,obj[k]); }); } finally{ restoring=false; } }
+async function pushCloud(){ if(!sb||!currentUser) return; try{ await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:new Date().toISOString()}); }catch(e){} }
+function scheduleCloudPush(){ clearTimeout(cloudTimer); cloudTimer=setTimeout(pushCloud,2500); }
+async function afterLoginSync(){ let row=null;
+  try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+  if(row && row.data && Object.keys(row.data).length){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); location.reload(); }
+  else { await pushCloud(); renderAccount(); alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
+async function acctLogin(){ if(!sb){alert('Login butuh koneksi internet.');return;}
+  const email=(document.getElementById('acEmail').value||'').trim(), pass=document.getElementById('acPass').value||'';
+  if(!email||!pass){alert('Isi email & password.');return;}
+  const btn=document.getElementById('acLogin'); if(btn){btn.disabled=true;btn.textContent='Memproses...';}
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){ alert('Gagal masuk: '+error.message); if(btn){btn.disabled=false;btn.textContent='Masuk';} return; }
+  currentUser=data.user; await afterLoginSync(); }
+async function acctRegister(){ if(!sb){alert('Login butuh koneksi internet.');return;}
+  const email=(document.getElementById('acEmail').value||'').trim(), pass=document.getElementById('acPass').value||'';
+  if(!email||pass.length<6){alert('Isi email & password minimal 6 karakter.');return;}
+  const btn=document.getElementById('acReg'); if(btn){btn.disabled=true;btn.textContent='Memproses...';}
+  const {data,error}=await sb.auth.signUp({email,password:pass});
+  if(error){ alert('Gagal daftar: '+error.message); if(btn){btn.disabled=false;btn.textContent='Daftar';} return; }
+  if(!data.session){ alert('Akun dibuat! Cek email untuk konfirmasi (jika diminta), lalu klik Masuk.'); if(btn){btn.disabled=false;btn.textContent='Daftar';} return; }
+  currentUser=data.user; await afterLoginSync(); }
+async function acctLogout(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } currentUser=null; renderAccount(); }
+async function acctPull(){ if(!sb||!currentUser) return;
+  if(!confirm('Tarik data terbaru dari cloud? Data di perangkat ini akan diganti versi cloud.')) return;
+  let row=null; try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+  if(row && row.data){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); location.reload(); }
+  else alert('Belum ada data di cloud.'); }
+function renderAccount(){ const box=document.getElementById('acctBox'); if(!box) return;
+  if(!sb){ box.innerHTML='<div class="ttl">☁️ Akun & Sinkron</div><div class="sub">Butuh koneksi internet untuk login.</div>'; return; }
+  if(currentUser){ box.innerHTML='<div class="ttl">☁️ Akun</div><div class="sub">Masuk sebagai <span class="em">'+(currentUser.email||'')+'</span> · data tersinkron otomatis.</div>'
+      +'<div class="grid2"><button class="ghost-btn" style="margin:0" onclick="acctPull()">⬇ Tarik data terbaru</button><button class="ghost-btn" style="margin:0" onclick="acctLogout()">Keluar</button></div>'; }
+  else { box.innerHTML='<div class="ttl">☁️ Masuk / Daftar</div><div class="sub">Login untuk menyimpan & menyinkronkan datamu di semua perangkat.</div>'
+      +'<input id="acEmail" type="email" placeholder="Email" autocomplete="email"><input id="acPass" type="password" placeholder="Password (min. 6)" autocomplete="current-password">'
+      +'<div class="grid2"><button class="ghost-btn" id="acLogin" style="margin:0" onclick="acctLogin()">Masuk</button><button class="ghost-btn" id="acReg" style="margin:0" onclick="acctRegister()">Daftar</button></div>'; } }
+window.acctLogin=acctLogin;window.acctRegister=acctRegister;window.acctLogout=acctLogout;window.acctPull=acctPull;
+if(sb){ sb.auth.getSession().then(function(res){ if(res && res.data && res.data.session){ currentUser=res.data.session.user; } renderAccount(); }); }
+
 fillFilters();applyRecurring();render();dailyNotif();
 if(!settings)openSettings();
 // PWA service worker (only works when hosted)
