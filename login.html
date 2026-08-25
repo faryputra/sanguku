@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Masuk — SanguKu</title>
+<meta name="theme-color" content="#0d0f14">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  :root{--bg:#0d0f14;--card:#151922;--card2:#1b202b;--line:#242a36;--txt:#eef1f6;--muted:#98a2b3;--gold:#e6c068;--gold2:#c89b3f;--red:#f87171;--green:#4ade80}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Manrope',system-ui,sans-serif;background:radial-gradient(700px 380px at 50% -8%,#1a2030,transparent 60%),var(--bg);
+    color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;-webkit-font-smoothing:antialiased}
+  .card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:30px 26px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:6px}
+  .brand .dot{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;color:#1a1408;font-weight:900;font-size:22px}
+  .brand b{font-size:22px;font-weight:800}
+  h1{text-align:center;font-size:19px;font-weight:800;margin:14px 0 4px}
+  .sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:22px}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:600}
+  input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--txt);font-size:15px;font-family:inherit;outline:none}
+  input:focus{border-color:var(--gold)}
+  .btn{width:100%;border:none;border-radius:13px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:20px;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;transition:.15s}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .msg{display:none;font-size:13px;text-align:center;padding:11px;border-radius:11px;margin-top:14px}
+  .foot{text-align:center;font-size:13px;color:var(--muted);margin-top:20px}
+  .foot a{color:var(--gold);font-weight:700}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand"><span class="dot">S</span><b>SanguKu</b></div>
+  <h1>Masuk ke akunmu</h1>
+  <div class="sub">Kelola keuanganmu, tersinkron di semua perangkat.</div>
+  <form id="f" onsubmit="return doLogin(event)">
+    <label>Email</label>
+    <input id="email" type="email" placeholder="kamu@email.com" required autocomplete="email">
+    <label>Password</label>
+    <input id="pass" type="password" placeholder="Password" required autocomplete="current-password">
+    <button class="btn" type="submit" id="btn">Masuk</button>
+    <div class="msg" id="msg"></div>
+  </form>
+  <div class="foot">Belum punya akun? <a href="/daftar">Daftar di sini</a></div>
+</div>
+<script>
+  const SUPA_URL='https://stxahqcdmrzxopcqeyya.supabase.co';
+  const SUPA_ANON='sb_publishable_1EdsbivyQLs-xT_ehe6-XA_PJZ94Vtb';
+  const sb=window.supabase.createClient(SUPA_URL,SUPA_ANON);
+
+  // sudah login -> langsung ke app
+  sb.auth.getSession().then(function(r){ if(r&&r.data&&r.data.session) location.replace('/'); });
+
+  function showMsg(t,ok){ const m=document.getElementById('msg'); m.style.display='block'; m.textContent=t;
+    m.style.color=ok?'var(--green)':'var(--red)';
+    m.style.background=ok?'rgba(74,222,128,.1)':'rgba(248,113,113,.1)'; }
+
+  async function isAllowed(){ try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(error) return false; return !!(data&&data.length); }catch(e){ return false; } }
+
+  async function doLogin(e){
+    e.preventDefault();
+    const email=document.getElementById('email').value.trim();
+    const pass=document.getElementById('pass').value;
+    if(!email||!pass) return false;
+    const btn=document.getElementById('btn'); btn.disabled=true; btn.textContent='Memproses...';
+    const {error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){ showMsg('Gagal masuk: '+error.message,false); btn.disabled=false; btn.textContent='Masuk'; return false; }
+    const ok=await isAllowed();
+    if(!ok){ await sb.auth.signOut(); showMsg('Email ini belum terdaftar sebagai pembeli. Hubungi admin (WA 0851-7156-7692).',false); btn.disabled=false; btn.textContent='Masuk'; return false; }
+    showMsg('Berhasil! Membuka aplikasi...',true);
+    location.replace('/');
+    return false;
+  }
+</script>
+</body>
+</html>

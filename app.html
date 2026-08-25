@@ -1324,7 +1324,8 @@ async function acctRegister(){ if(!sb){alert('Login butuh koneksi internet.');re
   if(error){ alert('Gagal daftar: '+error.message); if(btn){btn.disabled=false;btn.textContent='Daftar';} return; }
   if(!data.session){ alert('Akun dibuat! Cek email untuk konfirmasi (jika diminta), lalu klik Masuk.'); if(btn){btn.disabled=false;btn.textContent='Daftar';} return; }
   currentUser=data.user; await afterLoginSync(); }
-async function acctLogout(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } currentUser=null; renderAccount(); }
+async function acctLogout(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } currentUser=null;
+  if(location.protocol.indexOf('http')===0){ location.replace('/login'); } else { renderAccount(); } }
 async function acctPull(){ if(!sb||!currentUser) return;
   if(!confirm('Tarik data terbaru dari cloud? Data di perangkat ini akan diganti versi cloud.')) return;
   let row=null; try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
@@ -1349,7 +1350,16 @@ function renderAccount(){
 }
 window.openAcct=function(){ renderAccount(); document.getElementById('ovAcct').classList.add('show'); };
 window.acctLogin=acctLogin;window.acctRegister=acctRegister;window.acctLogout=acctLogout;window.acctPull=acctPull;
-if(sb){ sb.auth.getSession().then(function(res){ if(res && res.data && res.data.session){ currentUser=res.data.session.user; } renderAccount(); }); }
+if(sb && location.protocol.indexOf('http')===0){
+  try{ document.body.style.visibility='hidden'; }catch(e){}
+  sb.auth.getSession().then(async function(res){
+    if(res && res.data && res.data.session){
+      currentUser=res.data.session.user;
+      if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} location.replace('/login'); return; } }
+      renderAccount(); try{document.body.style.visibility='';}catch(e){}
+    } else { location.replace('/login'); }
+  });
+} else if(sb){ sb.auth.getSession().then(function(res){ if(res && res.data && res.data.session){ currentUser=res.data.session.user; } renderAccount(); }); }
 
 fillFilters();applyRecurring();render();dailyNotif();
 if(!settings)openSettings();
