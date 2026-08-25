@@ -24,6 +24,8 @@
   .plan .pn{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
   .plan .pp{font-size:19px;font-weight:800;margin-top:3px}
   .plan .pop{position:absolute;top:-9px;right:8px;background:var(--gold);color:#1a1408;font-size:9px;font-weight:800;padding:2px 7px;border-radius:6px}
+  .plan.disabled{opacity:.45;cursor:not-allowed;filter:grayscale(1)}
+  .plan .pop.soon{background:var(--muted);color:#111}
   .detail{display:flex;justify-content:space-between;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .detail .old{color:var(--muted);text-decoration:line-through;font-size:14px}
   .detail .now{font-size:26px;font-weight:900;border-bottom:3px solid var(--gold);display:inline-block}
@@ -69,11 +71,11 @@
   /* ================= KONFIGURASI ================= */
   const SUPA_URL='https://stxahqcdmrzxopcqeyya.supabase.co';
   const SUPA_ANON='sb_publishable_1EdsbivyQLs-xT_ehe6-XA_PJZ94Vtb';
-  const FORMULIR_URL='';   // <-- ISI dengan link form pembayaran formulir.com kamu
+  const FORMULIR_URL='https://luarshop.form.id/sanguku';   // link form pembayaran formulir.com
   const TURNSTILE_SITEKEY='';   // opsional (anti-bot Cloudflare)
   const PLANS=[
-    { id:'starter', name:'Starter', price:99000,  old:199000, popular:false },
-    { id:'pro',     name:'Pro',     price:149000, old:299000, popular:true  }
+    { id:'starter', name:'Starter', price:99000,  old:199000, popular:false, disabled:false },
+    { id:'pro',     name:'Pro',     price:149000, old:299000, popular:false, disabled:true  }
   ];
   /* =============================================== */
 
@@ -83,15 +85,15 @@
 
   function renderPlans(){
     document.getElementById('plans').innerHTML=PLANS.map(p=>`
-      <div class="plan ${p.id===selected?'sel':''}" onclick="selectPlan('${p.id}')">
-        ${p.popular?'<span class="pop">POPULER</span>':''}<div class="pn">${p.name}</div><div class="pp">${rp(p.price)}</div></div>`).join('');
+      <div class="plan ${p.id===selected?'sel':''} ${p.disabled?'disabled':''}" ${p.disabled?'':`onclick="selectPlan('${p.id}')"`}>
+        ${p.disabled?'<span class="pop soon">Segera</span>':(p.popular?'<span class="pop">POPULER</span>':'')}<div class="pn">${p.name}</div><div class="pp">${rp(p.price)}</div></div>`).join('');
     const p=PLANS.find(x=>x.id===selected);
     document.getElementById('dName').textContent=p.name;
     document.getElementById('dOld').textContent=rp(p.old);
     document.getElementById('dNow').textContent=rp(p.price);
     document.getElementById('saveTxt').textContent='HEMAT '+rp(p.old-p.price);
   }
-  function selectPlan(id){ selected=id; renderPlans(); }
+  function selectPlan(id){ const p=PLANS.find(x=>x.id===id); if(!p||p.disabled) return; selected=id; renderPlans(); }
   renderPlans();
 
   let tsToken='';
