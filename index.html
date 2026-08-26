@@ -1299,18 +1299,28 @@ const _setItem=localStorage.setItem.bind(localStorage);
 localStorage.setItem=function(k,v){ _setItem(k,v);
   if(!restoring && currentUser && sb && typeof k==='string' && k.indexOf('sg_')===0 && k!=='sg_lastnotif') scheduleCloudPush(); };
 function cloudSnapshot(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
-  if(k && k.indexOf('sg_')===0 && k!=='sg_lastnotif' && k!=='sg_prelogin_backup' && k!=='sg_synced_uid') o[k]=localStorage.getItem(k);} return o; }
+  if(k && k.indexOf('sg_')===0 && k!=='sg_lastnotif' && k!=='sg_prelogin_backup' && k!=='sg_synced_uid' && k!=='sg_synced_at') o[k]=localStorage.getItem(k);} return o; }
 function cloudRestore(obj){ restoring=true; try{ Object.keys(obj||{}).forEach(function(k){ if(typeof obj[k]==='string') _setItem(k,obj[k]); }); } finally{ restoring=false; } }
-async function pushCloud(){ if(!sb||!currentUser) return; try{ await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:new Date().toISOString()}); }catch(e){} }
+async function pushCloud(){ if(!sb||!currentUser) return; try{ const ts=new Date().toISOString();
+  const {error}=await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:ts});
+  if(!error) _setItem('sg_synced_at',ts); }catch(e){} }
+function subscribeRealtime(){ if(!sb||!currentUser||window._sgRT) return; window._sgRT=true;
+  try{ sb.channel('ud_'+currentUser.id)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'user_data',filter:'user_id=eq.'+currentUser.id}, function(p){
+      const nt=p && p.new && p.new.updated_at;
+      if(nt && nt>(localStorage.getItem('sg_synced_at')||'')){
+        if(!document.querySelector('.overlay.show')){ location.reload(); }
+      }
+    }).subscribe(); }catch(e){} }
 function scheduleCloudPush(){ clearTimeout(cloudTimer); cloudTimer=setTimeout(pushCloud,2500); }
 async function afterLoginSync(){
   if(GATING){ const ok=await isAllowed();
     if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount();
       alert('Email ini belum terdaftar sebagai pembeli SanguKu.\nHubungi admin (WhatsApp 0851-7156-7692) untuk aktivasi akun.'); return; } }
   let row=null;
-  try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
-  if(row && row.data && Object.keys(row.data).length){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_uid',currentUser.id); location.reload(); }
-  else { await pushCloud(); _setItem('sg_synced_uid',currentUser.id); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
+  try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+  if(row && row.data && Object.keys(row.data).length){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload(); }
+  else { await pushCloud(); _setItem('sg_synced_uid',currentUser.id); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
 async function acctLogin(){ if(!sb){alert('Login butuh koneksi internet.');return;}
   const email=(document.getElementById('acEmail').value||'').trim(), pass=document.getElementById('acPass').value||'';
   if(!email||!pass){alert('Isi email & password.');return;}
@@ -1327,11 +1337,11 @@ async function acctRegister(){ if(!sb){alert('Login butuh koneksi internet.');re
   if(!data.session){ alert('Akun dibuat! Cek email untuk konfirmasi (jika diminta), lalu klik Masuk.'); if(btn){btn.disabled=false;btn.textContent='Daftar';} return; }
   currentUser=data.user; await afterLoginSync(); }
 async function acctLogout(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } currentUser=null;
-  if(location.protocol.indexOf('http')===0){ location.replace('/login'); } else { renderAccount(); } }
+  try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} renderAccount(); }
 async function acctPull(){ if(!sb||!currentUser) return;
   if(!confirm('Tarik data terbaru dari cloud? Data di perangkat ini akan diganti versi cloud.')) return;
-  let row=null; try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
-  if(row && row.data){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); location.reload(); }
+  let row=null; try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+  if(row && row.data){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_at',row.updated_at||''); location.reload(); }
   else alert('Belum ada data di cloud.'); }
 function renderAccount(){
   const initial=((currentUser&&currentUser.email)?currentUser.email[0]:'☁').toUpperCase();
@@ -1352,24 +1362,28 @@ function renderAccount(){
 }
 window.openAcct=function(){ renderAccount(); document.getElementById('ovAcct').classList.add('show'); };
 window.acctLogin=acctLogin;window.acctRegister=acctRegister;window.acctLogout=acctLogout;window.acctPull=acctPull;
-if(sb && location.protocol.indexOf('http')===0){
-  try{ document.body.style.visibility='hidden'; }catch(e){}
+if(sb){
   sb.auth.getSession().then(async function(res){
     if(res && res.data && res.data.session){
       currentUser=res.data.session.user;
-      if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} location.replace('/login'); return; } }
-      // sinkron pertama kali akun ini di perangkat ini: tarik data dari cloud
-      if(navigator.onLine && localStorage.getItem('sg_synced_uid')!==currentUser.id){
-        let row=null; try{ const r=await sb.from('user_data').select('data').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
-        if(row && row.data && Object.keys(row.data).length){
+      if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount(); return; } }
+      // tarik data cloud jika versi cloud lebih baru (atau perangkat baru)
+      if(navigator.onLine){
+        let row=null; try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+        const localTs=localStorage.getItem('sg_synced_at')||'';
+        const uidNew=localStorage.getItem('sg_synced_uid')!==currentUser.id;
+        const hasCloud=row && row.data && Object.keys(row.data).length;
+        if(hasCloud && (uidNew || (row.updated_at||'')>localTs)){
           _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data);
-          _setItem('sg_synced_uid',currentUser.id); location.reload(); return;
-        } else { await pushCloud(); _setItem('sg_synced_uid',currentUser.id); }
+          _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload(); return;
+        } else if(!hasCloud){ await pushCloud(); _setItem('sg_synced_uid',currentUser.id); }
+        else { _setItem('sg_synced_uid',currentUser.id); if(!localTs) _setItem('sg_synced_at',row.updated_at||''); }
       }
-      renderAccount(); try{document.body.style.visibility='';}catch(e){}
-    } else { location.replace('/login'); }
+      subscribeRealtime();
+    }
+    renderAccount();
   });
-} else if(sb){ sb.auth.getSession().then(function(res){ if(res && res.data && res.data.session){ currentUser=res.data.session.user; } renderAccount(); }); }
+}
 
 fillFilters();applyRecurring();render();dailyNotif();
 if(!settings)openSettings();
