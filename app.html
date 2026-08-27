@@ -187,6 +187,13 @@
   .pill-tabs button.active{background:var(--card2);color:var(--gold);border-color:var(--gold)}
   .thumb{width:42px;height:42px;border-radius:9px;object-fit:cover;border:1px solid var(--line)}
   .hidden{display:none}
+  .calc-expr{font-size:12px;color:var(--gold);min-height:16px;margin:-4px 0 4px;font-weight:600}
+  .calc-row{display:none;gap:6px;margin:0 0 12px}
+  .calc-row.show{display:flex}
+  .calc-row button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;
+    padding:11px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .12s ease}
+  .calc-row button:active{transform:scale(.95)}
+  .calc-row button[data-op="="]{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;border:none}
   .quick-amt{display:flex;gap:6px;margin:-4px 0 12px;flex-wrap:wrap}
   .quick-amt button{flex:1;min-width:54px;background:var(--card);border:1px solid var(--line);color:var(--txt);
     border-radius:9px;padding:8px 4px;font-size:13px;font-weight:600;cursor:pointer}
@@ -575,7 +582,15 @@
     <h3 id="txTitle">Catat Transaksi</h3>
     <div class="fav-row" id="favRow"></div>
     <div class="seg"><button id="segOut" class="active out">Pengeluaran</button><button id="segIn">Pemasukan</button></div>
-    <label>Nominal</label><input type="tel" id="amtInput" placeholder="0" inputmode="numeric">
+    <label style="display:flex;justify-content:space-between;align-items:center">Nominal <span class="link" id="calcToggle"><i class="ti ti-calculator"></i> Kalkulator</span></label>
+    <input type="tel" id="amtInput" placeholder="0" inputmode="numeric">
+    <div class="calc-expr" id="calcExpr"></div>
+    <div class="calc-row" id="calcRow">
+      <button type="button" data-op="+">+</button>
+      <button type="button" data-op="-">−</button>
+      <button type="button" data-op="*">×</button>
+      <button type="button" data-op="=">=</button>
+    </div>
     <div class="quick-amt" id="quickAmt">
       <button type="button" data-add="10000">+10rb</button>
       <button type="button" data-add="20000">+20rb</button>
@@ -1299,7 +1314,26 @@ fmt(document.getElementById('amtInput'));
 document.querySelectorAll('#quickAmt button').forEach(b=>b.onclick=()=>{
   const inp=document.getElementById('amtInput');let cur=Number(inp.value.replace(/\D/g,''))||0;
   const add=Number(b.dataset.add);cur=add===0?0:cur+add;
-  inp.value=cur?cur.toLocaleString('id-ID'):'';});
+  inp.value=cur?cur.toLocaleString('id-ID'):'';
+  if(add===0)resetCalc();});
+// ---------- MINI KALKULATOR NOMINAL ----------
+let calcPending=null,calcOp=null;
+const OPSYM={'+':'+','-':'−','*':'×'};
+function calcApply(a,op,b){ if(op==='+')return a+b; if(op==='-')return a-b; if(op==='*')return a*b; return b; }
+function calcUpdateExpr(){ const el=document.getElementById('calcExpr'); if(!el)return;
+  el.textContent=calcPending!==null?(Number(calcPending).toLocaleString('id-ID')+' '+OPSYM[calcOp]):''; }
+function resetCalc(){ calcPending=null;calcOp=null;calcUpdateExpr(); }
+document.getElementById('calcToggle').onclick=()=>{ document.getElementById('calcRow').classList.toggle('show'); };
+document.querySelectorAll('#calcRow button').forEach(b=>b.onclick=()=>{
+  const inp=document.getElementById('amtInput'); const cur=Number(inp.value.replace(/\D/g,''))||0; const op=b.dataset.op;
+  if(op==='='){
+    if(calcPending!==null){ const res=Math.max(0,calcApply(calcPending,calcOp,cur));
+      inp.value=res?res.toLocaleString('id-ID'):''; resetCalc(); }
+  } else {
+    calcPending=calcPending!==null?Math.max(0,calcApply(calcPending,calcOp,cur)):cur;
+    calcOp=op; inp.value=''; calcUpdateExpr(); inp.focus();
+  }
+});
 document.querySelectorAll('.quick-date button').forEach(b=>b.onclick=()=>{
   const d=new Date();d.setDate(d.getDate()-Number(b.dataset.day));
   document.getElementById('dateInput').value=d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());});
@@ -1329,6 +1363,7 @@ document.getElementById('fab').onclick=()=>{
   document.getElementById('amtInput').value='';document.getElementById('noteInput').value='';document.getElementById('tagInput').value='';
   document.getElementById('dateInput').value=new Date().toISOString().slice(0,10);
   document.getElementById('photoInput').value='';document.getElementById('photoPrev').innerHTML='';curPhoto='';
+  resetCalc();document.getElementById('calcRow').classList.remove('show');
   fillAccSelect(document.getElementById('accInput'));setType('out');renderFavs();ovTx.classList.add('show');};
 function editTx(id){const t=data.find(x=>x.id===id);if(!t)return;
   editId=id;document.getElementById('txTitle').textContent='Edit Transaksi';document.getElementById('saveBtn').textContent='Simpan Perubahan';
@@ -1341,6 +1376,7 @@ function editTx(id){const t=data.find(x=>x.id===id);if(!t)return;
   document.getElementById('accInput').value=t.acc;
   curPhoto=t.photo||'';document.getElementById('photoInput').value='';
   document.getElementById('photoPrev').innerHTML=curPhoto?`<img class="thumb" src="${curPhoto}" style="width:64px;height:64px;margin-bottom:10px">`:'';
+  resetCalc();document.getElementById('calcRow').classList.remove('show');
   ovTx.classList.add('show');}
 document.getElementById('saveBtn').onclick=()=>{
   const amt=Number(document.getElementById('amtInput').value.replace(/\D/g,''));
