@@ -639,6 +639,7 @@ const accBalance=id=>{const a=accounts.find(x=>x.id===id);let b=a?a.start:0;
   data.forEach(t=>{
     if(t.type==='tf'){if(t.from===id)b-=t.amt+(t.fee||0);if(t.to===id)b+=t.amt;}
     else if(t.type==='debt'){if(t.acc===id)b+=(t.dir==='in'?t.amt:-t.amt);}
+    else if(t.type==='wd'){if(t.acc===id)b+=t.amt;}
     else if(t.acc===id)b+=(t.type==='in'?t.amt:-t.amt);
   });return b;};
 const totalBalance=()=>accounts.reduce((s,a)=>s+accBalance(a.id),0);
@@ -766,6 +767,9 @@ function txRowHTML(t,withAcc){
   if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
     <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}${t.fee?' · admin '+rp(t.fee):''}</div></div>
     <div class="amt">${rp(t.amt)}</div><button class="x" onclick="editTransfer(${t.id})" title="Edit">✎</button><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
+  if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#4ade8022;color:var(--green)">↩</div>
+    <div class="meta"><div class="n">Tarik tabungan${g?': '+g.name:''}</div><div class="d">ke ${accName(t.acc)} · ${tlabel(t)}</div></div>
+    <div class="amt in">+${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#e6c06822;color:var(--gold)">🐷</div>
     <div class="meta"><div class="n">Nabung${g?': '+g.name:''}</div><div class="d">dari ${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt out">−${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
@@ -813,7 +817,8 @@ function renderGoals(){
       <div style="display:flex;justify-content:space-between"><b>${g.name}</b><span class="small">${pct}%</span></div>
       <div class="prog"><i style="width:${pct}%"></i></div>
       <div class="small">${rp(g.saved)} / ${rp(g.target)}</div>
-      <div style="display:flex;gap:8px;margin-top:8px"><button class="mini-btn" onclick="addSaving(${g.id})">+ Nabung</button>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="mini-btn" onclick="addSaving(${g.id})">+ Nabung</button>
+      ${g.saved>0?`<button class="mini-btn" onclick="withdrawGoal(${g.id})">↩ Tarik ke dompet</button>`:''}
       <button class="mini-btn" onclick="delGoal(${g.id})">Hapus</button></div></div>`;}).join('');
   document.getElementById('goalList').innerHTML=html||'<div class="empty">Belum ada target. Yuk pasang target tabungan!</div>';
   document.getElementById('goalMini').innerHTML=goals.slice(0,2).map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;
@@ -890,12 +895,14 @@ function renderAdvice(tin,tout,byCat){
 // ---------- ACTIONS ----------
 window.delTx=id=>{const t=data.find(x=>x.id===id);if(!t)return;
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
+  if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved+=t.amt;}
   if(t.type==='debt'&&t.debtId&&!t.origin){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=Math.max(0,(d.paidAmt||0)-t.amt);d.paid=d.paidAmt>=d.amt;}}
   lastDeleted=t;data=data.filter(x=>x.id!==id);saveAll();render();showUndo();};
 function showUndo(){const el=document.getElementById('toast');document.getElementById('toastMsg').textContent='Transaksi dihapus';
   el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');lastDeleted=null;},5000);}
 document.getElementById('undoBtn').onclick=()=>{if(!lastDeleted)return;const t=lastDeleted;data.push(t);
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved+=t.amt;}
+  if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
   if(t.type==='debt'&&t.debtId&&!t.origin){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=(d.paidAmt||0)+t.amt;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}}}
   lastDeleted=null;document.getElementById('toast').classList.remove('show');saveAll();render();};
 window.delWallet=id=>{if(data.some(t=>t.acc===id||t.from===id||t.to===id)){alert('Masih ada transaksi/transfer di dompet ini.');return;}
@@ -914,6 +921,18 @@ window.saveSaving=id=>{const n=Number(document.getElementById('gSvAmt').value.re
   const acc=Number(document.getElementById('gSvAcc').value);const g=goals.find(x=>x.id===id);if(!g)return;
   g.saved+=n;const d=new Date();
   data.push({id:Date.now(),type:'sav',goal:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
+  saveAll();ovGen.classList.remove('show');render();};
+window.withdrawGoal=id=>{const g=goals.find(x=>x.id===id);if(!g)return;
+  openGen(`<h3>Tarik dari Tabungan</h3>
+  <div class="small" style="margin-bottom:10px">Tersedia di "${g.name}": <b>${rp(g.saved)}</b></div>
+  <label>Jumlah (Rp)</label><input id="gWdAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+  <label>Masuk ke dompet</label><select id="gWdAcc">${accounts.map(a=>`<option value="${a.id}">${WTYPE[a.type]||''} ${a.name} (${rp(accBalance(a.id))})</option>`).join('')}</select>
+  <button class="save-btn" onclick="saveWithdraw(${id})">Tarik ke Dompet</button>
+  <div class="small" style="margin-top:8px">Uang ditambahkan ke saldo dompet & dikurangi dari tabungan.</div>`);};
+window.saveWithdraw=id=>{const g=goals.find(x=>x.id===id);if(!g)return;
+  let n=Number(document.getElementById('gWdAmt').value.replace(/\D/g,''));if(!n)return;n=Math.min(n,g.saved);
+  const acc=Number(document.getElementById('gWdAcc').value);g.saved-=n;const d=new Date();
+  data.push({id:Date.now(),type:'wd',goal:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
   saveAll();ovGen.classList.remove('show');render();};
 window.delDebt=id=>{if(confirm('Hapus catatan ini? Riwayat pembayaran yang terhubung ke dompet juga ikut dihapus.')){
   debts=debts.filter(d=>d.id!==id);data=data.filter(t=>!(t.type==='debt'&&t.debtId===id));saveAll();render();}};
@@ -1338,9 +1357,7 @@ document.querySelectorAll('.overlay').forEach(o=>o.onclick=e=>{if(e.target===o)o
 (function(){var u=new URLSearchParams(location.search).get('lisensi')||new URLSearchParams(location.search).get('u');
   var nm=u?String(u).replace(/[<>]/g,'').trim().slice(0,40):'';
   if(nm)try{localStorage.setItem('sg_lic',nm);}catch(e){} else {try{nm=localStorage.getItem('sg_lic')||'';}catch(e){}}
-  document.getElementById('licenseFooter').innerHTML=
-    (nm?'Lisensi untuk: <b style="color:var(--gold)">'+nm.replace(/[<>]/g,'')+'</b><br>':'')+
-    'SanguKu © LuarDigital · Lisensi pribadi — dilarang menyebarluaskan atau menjual ulang.';})();
+  document.getElementById('licenseFooter').innerHTML='SanguKu © LuarDigital';})();
 // ---------- PROFILE UI (Pro) ----------
 const PTYPE={pribadi:'👤',usaha:'🏪'};
 function renderProfileBar(){
@@ -1407,6 +1424,9 @@ function subscribeRealtime(){ if(!sb||!currentUser||window._sgRT) return; window
       }
     }).subscribe(); }catch(e){} }
 function scheduleCloudPush(){ clearTimeout(cloudTimer); cloudTimer=setTimeout(pushCloud,2500); }
+function flushCloud(){ if(cloudTimer){clearTimeout(cloudTimer);cloudTimer=null;} if(sb&&currentUser) pushCloud(); }
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden') flushCloud(); });
+window.addEventListener('pagehide',flushCloud);
 async function afterLoginSync(){
   if(GATING){ const ok=await isAllowed();
     if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount();
