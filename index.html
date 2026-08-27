@@ -10,13 +10,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
   :root{
     --bg:#0d0f14;--bg2:#141823;--card:#181d2a;--card2:#1f2433;--line:#272d3d;
     --txt:#e8ebf2;--muted:#8a93a8;--gold:#e6c068;--gold2:#c89b3f;
     --green:#4ade80;--red:#f87171;--blue:#60a5fa;--radius:18px}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:'Manrope','Segoe UI',system-ui,-apple-system,sans-serif;color:var(--txt);min-height:100vh;
+  body{font-family:'Sora','Segoe UI',system-ui,-apple-system,sans-serif;color:var(--txt);min-height:100vh;
     background:radial-gradient(1200px 600px at 80% -10%,#1a2030 0%,transparent 60%),var(--bg);padding-bottom:100px}
   .wrap{max-width:540px;margin:0 auto;padding:16px 14px}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -36,6 +36,20 @@
   h2{font-size:15px;margin:18px 0 10px;display:flex;align-items:center;justify-content:space-between}
   h2 .link{font-size:12px;color:var(--gold);cursor:pointer;font-weight:600}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .boot-splash{position:fixed;inset:0;z-index:999;background:var(--bg);padding:20px;max-width:560px;margin:0 auto;overflow:hidden}
+  .boot-splash.hide{opacity:0;pointer-events:none;transition:opacity .35s ease}
+  .boot-card{height:110px;border-radius:var(--radius);background:var(--card);margin-bottom:20px;padding:20px}
+  .boot-row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .boot-meta{flex:1;min-width:0}
+  .sk{background:linear-gradient(90deg,var(--card2) 25%,var(--line) 50%,var(--card2) 75%);background-size:200% 100%;
+    animation:skShimmer 1.3s ease-in-out infinite;border-radius:8px}
+  @keyframes skShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .sk-label{width:90px;height:11px;margin-bottom:12px}
+  .sk-amount{width:170px;height:28px}
+  .sk-ico{width:40px;height:40px;border-radius:12px;flex-shrink:0}
+  .sk-line1{width:55%;height:13px;margin-bottom:8px}
+  .sk-line2{width:35%;height:11px}
+  .sk-amt{width:64px;height:13px;flex-shrink:0}
   .balance-card{background:linear-gradient(135deg,#1d2335,#161b28);border:1px solid var(--line);
     border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;margin-bottom:12px}
   .balance-card::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;
@@ -57,6 +71,32 @@
   .row .meta .d{font-size:12px;color:var(--muted)}
   .row .amt{font-weight:700;font-size:14px;white-space:nowrap}
   .row .amt.in{color:var(--green)} .row .amt.out{color:var(--red)}
+  /* Expandable detail row (klik utk lihat detail + ubah/hapus) */
+  .titem{border-bottom:1px solid var(--line)}
+  .titem:last-child{border-bottom:none}
+  .titem .row{border-bottom:none;cursor:pointer;user-select:none;transition:background .15s;border-radius:10px;margin:0 -6px;padding:11px 6px}
+  .titem .row:active{background:var(--card2)}
+  .chev{color:var(--muted);font-size:13px;flex-shrink:0;transition:transform .28s cubic-bezier(.4,0,.2,1);margin-left:2px}
+  .titem.open .chev{transform:rotate(90deg);color:var(--gold)}
+  .tdetail{max-height:0;overflow:hidden;transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0}
+  .titem.open .tdetail{max-height:340px;opacity:1}
+  .tdetail-in{padding:2px 6px 16px;display:flex;flex-direction:column;gap:10px}
+  .dline{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:2px 0}
+  .dline .dl{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .dline .dv{font-weight:700;text-align:right}
+  .dnote .dl{color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px}
+  .dnote .dv{font-size:13.5px;font-weight:600;line-height:1.4}
+  .dbtns{display:flex;gap:8px;margin-top:6px}
+  .dbtn{flex:1;padding:12px;border-radius:13px;border:1px solid var(--line);background:var(--card);
+    font-size:13px;font-weight:700;cursor:pointer;color:var(--txt);font-family:inherit;transition:.15s}
+  .dbtn:active{transform:scale(.97)}
+  /* Tactile tap feedback */
+  .mini-btn,.save-btn,.ghost-btn,.add-card,.acct-chip,.wa-btn,.fab,.mnav,.seg button,.pill-tabs button,.cat-grid button,.quick-amt button,.quick-date button,.brand-grid button{transition:transform .12s ease}
+  .mini-btn:active,.save-btn:active,.ghost-btn:active,.add-card:active,.acct-chip:active,.wa-btn:active,.fab:active,.mnav:active,.seg button:active,.pill-tabs button:active,.cat-grid button:active,.quick-amt button:active,.quick-date button:active,.brand-grid button:active{transform:scale(.95)}
+  .dbtn.edit{color:var(--gold);border-color:#3a2e12}
+  .dbtn.del{color:var(--red);border-color:#3a1717}
+  .dbtns{flex-wrap:wrap}
+  .dbtn{flex:1 1 45%}
   .row .x{color:var(--muted);background:none;border:none;font-size:15px;cursor:pointer;padding:4px;opacity:.6}
   .cats{display:flex;flex-direction:column;gap:12px}
   .cat{display:flex;align-items:center;gap:12px}
@@ -68,7 +108,8 @@
   .badge{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;white-space:nowrap}
   .badge.ok{background:#14331f;color:var(--green)}.badge.warn{background:#3a2e12;color:var(--gold)}
   .badge.over{background:#3a1717;color:var(--red)}
-  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:14px}
+  .empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:13.5px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .empty .ei{font-size:32px;opacity:.55}
   .chart-box{height:200px;position:relative}
   .advice{background:linear-gradient(135deg,#1e2438,#171b27);border:1px solid var(--line);border-radius:14px;
     padding:13px;display:flex;gap:11px;margin-bottom:10px}.advice .ico{font-size:21px}.advice .txt{font-size:13px;line-height:1.5}
@@ -85,11 +126,15 @@
     width:58px;height:58px;border-radius:50%;font-size:28px;cursor:pointer;box-shadow:0 8px 24px rgba(230,192,104,.4);
     display:grid;place-items:center}
   /* Modal */
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:40;
-    display:none;align-items:flex-end;justify-content:center}
-  .overlay.show{display:flex}
-  .sheet{background:var(--bg2);border:1px solid var(--line);border-radius:24px 24px 0 0;width:100%;
-    max-width:540px;padding:20px 16px 28px;max-height:92vh;overflow-y:auto}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(5px);z-index:40;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex;animation:ovIn .18s ease}
+  @keyframes ovIn{from{opacity:0}to{opacity:1}}
+  .sheet{background:var(--bg2);border:1px solid var(--line);border-radius:22px;width:100%;
+    max-width:460px;padding:22px 18px 24px;max-height:86vh;overflow-y:auto;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+  .overlay.show .sheet{animation:sheetIn .32s cubic-bezier(.16,1,.3,1)}
+  @keyframes sheetIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @media(max-width:480px){.sheet{max-width:100%;border-radius:20px}}
   .sheet h3{font-size:17px;margin-bottom:14px;text-align:center}
   .seg{display:flex;background:var(--card);border-radius:12px;padding:4px;margin-bottom:14px}
   .seg button{flex:1;border:none;background:none;color:var(--muted);padding:9px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer}
@@ -200,6 +245,7 @@
   html.light .badge.ok{background:#dcfce7;color:#15803d}
   html.light .badge.warn{background:#fef3c7;color:#a16207}
   html.light .badge.over{background:#fee2e2;color:#b91c1c}
+  html.light .ico{filter:saturate(1.3);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
   .tabs button.soon{opacity:.55;cursor:not-allowed;display:inline-flex;align-items:center;gap:6px}
   .soon-badge{background:#3a2e12;color:var(--gold);font-size:9px;font-weight:700;padding:2px 6px;border-radius:99px}
   .soon-label{display:none;font-size:11px;color:var(--muted);letter-spacing:1px;font-weight:700;padding:8px 14px 2px}
@@ -261,6 +307,13 @@
 </style>
 </head>
 <body>
+<div id="bootSplash" class="boot-splash">
+  <div class="boot-card"><div class="sk sk-label"></div><div class="sk sk-amount"></div></div>
+  <div class="boot-row"><div class="sk sk-ico"></div><div class="boot-meta"><div class="sk sk-line1"></div><div class="sk sk-line2"></div></div><div class="sk sk-amt"></div></div>
+  <div class="boot-row"><div class="sk sk-ico"></div><div class="boot-meta"><div class="sk sk-line1"></div><div class="sk sk-line2"></div></div><div class="sk sk-amt"></div></div>
+  <div class="boot-row"><div class="sk sk-ico"></div><div class="boot-meta"><div class="sk sk-line1"></div><div class="sk sk-line2"></div></div><div class="sk sk-amt"></div></div>
+  <div class="boot-row"><div class="sk sk-ico"></div><div class="boot-meta"><div class="sk sk-line1"></div><div class="sk sk-line2"></div></div><div class="sk sk-amt"></div></div>
+</div>
 <div class="wrap">
   <header>
     <div class="logo"><span class="dot">S</span> SanguKu</div>
@@ -336,11 +389,11 @@
     <h2>Aktivitas Bulan Ini</h2>
     <div class="card"><div id="calHeat"></div></div>
     <h2>Pengeluaran per Kategori</h2>
-    <div class="card"><div class="cats" id="catList"><div class="empty">Belum ada data</div></div></div>
+    <div class="card"><div class="cats" id="catList"><div class="empty"><div class="ei">📊</div><div>Belum ada data</div></div></div></div>
     <h2>Target Tabungan <span class="link" data-goto="goal">Lihat semua</span></h2>
     <div id="goalMini"></div>
     <h2>Transaksi Terbaru <span class="link" data-goto="tx">Lihat semua</span></h2>
-    <div class="card" id="recentList"><div class="empty">Belum ada transaksi.</div></div>
+    <div class="card" id="recentList"><div class="empty"><div class="ei">🧾</div><div>Belum ada transaksi.</div></div></div>
   </div>
 
   <!-- TRANSACTIONS -->
@@ -608,6 +661,24 @@ const mlabel=d=>MONTHS[d.getMonth()]+' '+d.getFullYear();
 const sym=()=>CUR[(settings&&settings.currency)||'IDR'];
 let hideBal=localStorage.getItem('sg_hidebal')==='1';
 const rp=n=>hideBal?sym()+'•••':sym()+Math.round(n).toLocaleString('id-ID');
+const es=(icon,text)=>`<div class="empty"><div class="ei">${icon}</div><div>${text}</div></div>`;
+let _lastBalAnim=null,_balRAF=null;
+function animateBalance(el,target){
+  if(hideBal){_lastBalAnim=target;el.textContent=rp(target);return;}
+  const start=(_lastBalAnim===null||!isFinite(_lastBalAnim))?target:_lastBalAnim;
+  _lastBalAnim=target;
+  if(start===target){el.textContent=rp(target);return;}
+  if(_balRAF)cancelAnimationFrame(_balRAF);
+  const dur=550;const t0=performance.now();
+  function step(t){
+    const p=Math.min(1,(t-t0)/dur);
+    const eased=1-Math.pow(1-p,3);
+    const val=start+(target-start)*eased;
+    el.textContent=sym()+Math.round(val).toLocaleString('id-ID');
+    if(p<1){_balRAF=requestAnimationFrame(step);}else{el.textContent=rp(target);_balRAF=null;}
+  }
+  _balRAF=requestAnimationFrame(step);
+}
 const pad2=n=>String(n).padStart(2,'0');
 const hhmm=d=>pad2(d.getHours())+':'+pad2(d.getMinutes());
 const tlabel=t=>t.date+(t.time?' · '+t.time:'');
@@ -674,7 +745,8 @@ function render(){
   const tin=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
   const tout=tx.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0);
   const tb=document.getElementById('totalBalance');
-  tb.textContent=rp(totalBalance());tb.className='amount'+(totalBalance()<0?' neg':'');
+  const _bal=totalBalance();
+  animateBalance(tb,_bal);tb.className='amount'+(_bal<0?' neg':'');
   const nwl=document.getElementById('netWorthLine');const nw=netWorth();
   nwl.innerHTML=(utangTotal()||piutangTotal()||goalsSaved())?`Kekayaan bersih: <b style="color:${nw<0?'var(--red)':'var(--gold)'}">${rp(nw)}</b> <span style="color:var(--muted)">(saldo${goalsSaved()?' + tabungan':''}${piutangTotal()?' + piutang':''}${utangTotal()?' − utang':''})</span>`:'';
   document.getElementById('totalIn').textContent=rp(tin);
@@ -704,7 +776,7 @@ function render(){
     let badge='';if(bud){const r=v/bud;badge=r>1?`<span class="badge over">Lewat ${rp(v-bud)}</span>`:r>0.8?`<span class="badge warn">${Math.round(r*100)}%</span>`:`<span class="badge ok">Aman</span>`;}
     return `<div class="cat"><div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
       <div class="meta"><div class="n">${c.n} ${badge}</div><div class="bar"><i style="width:${pct}%;background:${bud&&v>bud?'var(--red)':c.c}"></i></div></div>
-      <div class="amt">${rp(v)}</div></div>`;}).join(''):'<div class="empty">Belum ada pengeluaran</div>';
+      <div class="amt">${rp(v)}</div></div>`;}).join(''):es('📊','Belum ada pengeluaran');
   fillFilters(); renderDash(); renderRecent(); renderTxAll(); renderWallets(); renderGoals(); renderDebts(); renderRecur(); renderCats();
   renderReport(sorted,tout); renderTrend(); renderAdvice(tin,tout,byCat);
 }
@@ -758,31 +830,55 @@ function renderTrend(){const ctx=document.getElementById('trendChart');if(!ctx)r
     options:{plugins:{legend:{labels:{color:'#8a93a8',boxWidth:12,font:{size:12}}}},
       scales:{x:{ticks:{color:'#8a93a8'},grid:{display:false}},y:{ticks:{color:'#8a93a8',callback:v=>v>=1e6?(v/1e6)+'jt':v>=1e3?(v/1e3)+'rb':v},grid:{color:'#272d3d'}}}}});
 }
+function titemHTML(rowHtml,detailHtml,dim){
+  return `<div class="titem"${dim?' style="opacity:.6"':''}><div class="row" onclick="toggleDetail(this)">${rowHtml}<span class="chev">›</span></div>
+    <div class="tdetail"><div class="tdetail-in">${detailHtml}</div></div></div>`;}
+function dline(l,v){return `<div class="dline"><span class="dl">${l}</span><span class="dv">${v}</span></div>`;}
+function dnote(l,v){return `<div class="dnote"><span class="dl">${l}</span><div class="dv">${v}</div></div>`;}
 function txRowHTML(t,withAcc){
   if(t.type==='debt'){const inn=t.dir==='in';
     let lbl=t.kind?(t.origin?(t.kind==='piutang'?'Beri pinjaman':'Terima pinjaman'):(t.kind==='piutang'?'Terima piutang':'Bayar utang')):(inn?'Terima piutang':'Bayar utang');
-    return `<div class="row"><div class="ico" style="background:${inn?'#4ade8022':'#f8717122'};color:${inn?'var(--green)':'var(--red)'}">${inn?'🤝':'💸'}</div>
+    const row=`<div class="ico" style="background:${inn?'#4ade8022':'#f8717122'};color:${inn?'var(--green)':'var(--red)'}">${inn?'🤝':'💸'}</div>
     <div class="meta"><div class="n">${lbl}${t.person?': '+t.person:''}</div><div class="d">${accName(t.acc)} · ${tlabel(t)}</div></div>
-    <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
-  if(t.type==='tf'){return `<div class="row"><div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
+    <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div>`;
+    const det=dline('Dompet',accName(t.acc))+dline('Jenis',lbl)+dline('Waktu',tlabel(t))+
+      `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})">🗑 Hapus</button></div>`;
+    return titemHTML(row,det);}
+  if(t.type==='tf'){
+    const row=`<div class="ico" style="background:#60a5fa22;color:#60a5fa">⇄</div>
     <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}${t.fee?' · admin '+rp(t.fee):''}</div></div>
-    <div class="amt">${rp(t.amt)}</div><button class="x" onclick="editTransfer(${t.id})" title="Edit">✎</button><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
-  if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#4ade8022;color:var(--green)">↩</div>
+    <div class="amt">${rp(t.amt)}</div>`;
+    const det=dline('Dari',accName(t.from))+dline('Ke',accName(t.to))+(t.fee?dline('Biaya admin',rp(t.fee)):'')+dline('Waktu',tlabel(t))+
+      `<div class="dbtns"><button class="dbtn edit" onclick="event.stopPropagation();editTransfer(${t.id})">✎ Ubah</button>
+      <button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})">🗑 Hapus</button></div>`;
+    return titemHTML(row,det);}
+  if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);
+    const row=`<div class="ico" style="background:#4ade8022;color:var(--green)">↩</div>
     <div class="meta"><div class="n">Tarik tabungan${g?': '+g.name:''}</div><div class="d">ke ${accName(t.acc)} · ${tlabel(t)}</div></div>
-    <div class="amt in">+${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
-  if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);return `<div class="row"><div class="ico" style="background:#e6c06822;color:var(--gold)">🐷</div>
+    <div class="amt in">+${rp(t.amt)}</div>`;
+    const det=dline('Dari target',g?g.name:'-')+dline('Ke dompet',accName(t.acc))+dline('Waktu',tlabel(t))+
+      `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})">🗑 Hapus</button></div>`;
+    return titemHTML(row,det);}
+  if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);
+    const row=`<div class="ico" style="background:#e6c06822;color:var(--gold)">🐷</div>
     <div class="meta"><div class="n">Nabung${g?': '+g.name:''}</div><div class="d">dari ${accName(t.acc)} · ${tlabel(t)}</div></div>
-    <div class="amt out">−${rp(t.amt)}</div><button class="x" onclick="delTx(${t.id})">🗑</button></div>`;}
+    <div class="amt out">−${rp(t.amt)}</div>`;
+    const det=dline('Dari dompet',accName(t.acc))+dline('Ke target',g?g.name:'-')+dline('Waktu',tlabel(t))+
+      `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})">🗑 Hapus</button></div>`;
+    return titemHTML(row,det);}
   const c=catInfo(t.type,t.cat);
-  return `<div class="row"><div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
+  const row=`<div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
     ${t.photo?`<img class="thumb" src="${t.photo}">`:''}
     <div class="meta"><div class="n">${t.note||c.n}</div><div class="d">${c.n} · ${tlabel(t)}${withAcc?' · '+accName(t.acc):''}</div>${t.tags&&t.tags.length?`<div class="tagline">${t.tags.map(x=>'#'+x).join(' ')}</div>`:''}</div>
-    <div class="amt ${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'−'}${rp(t.amt)}</div>
-    <button class="x" onclick="dupTx(${t.id})" title="Catat ulang (hari ini)">⧉</button>
-    <button class="x" onclick="editTx(${t.id})" title="Edit">✎</button>
-    <button class="x" onclick="delTx(${t.id})" title="Hapus">🗑</button></div>`;}
+    <div class="amt ${t.type==='in'?'in':'out'}">${t.type==='in'?'+':'−'}${rp(t.amt)}</div>`;
+  const det=dline('Dompet',accName(t.acc))+dline('Kategori',c.e+' '+c.n)+dline('Waktu',tlabel(t))+
+    (t.note?dnote('Catatan',t.note):'')+
+    `<div class="dbtns"><button class="dbtn" onclick="event.stopPropagation();dupTx(${t.id})">⧉ Catat Ulang</button>
+    <button class="dbtn edit" onclick="event.stopPropagation();editTx(${t.id})">✎ Ubah</button>
+    <button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})">🗑 Hapus</button></div>`;
+  return titemHTML(row,det);}
 function renderRecent(){const tx=monthTx().sort((a,b)=>(b.ts||b.id)-(a.ts||a.id)).slice(0,8);
-  document.getElementById('recentList').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):'<div class="empty">Belum ada transaksi.</div>';}
+  document.getElementById('recentList').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):es('🧾','Belum ada transaksi.');}
 function renderTxAll(){
   const q=(document.getElementById('txSearch').value||'').toLowerCase();
   const ft=document.getElementById('fltType').value, fc=document.getElementById('fltCat').value;
@@ -799,17 +895,18 @@ function renderTxAll(){
   if(q)tx=tx.filter(t=>((t.note||'')+' '+(CATS[t.type]?catInfo(t.type,t.cat).n:(t.type==='tf'?'transfer':'nabung'))+' '+((t.tags||[]).join(' '))).toLowerCase().includes(q));
   const S={new:(a,b)=>(b.ts||b.id)-(a.ts||a.id),old:(a,b)=>(a.ts||a.id)-(b.ts||b.id),hi:(a,b)=>b.amt-a.amt,lo:(a,b)=>a.amt-b.amt};
   tx=tx.slice().sort(S[fs]||S.new);
-  document.getElementById('txAll').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):'<div class="empty">Tidak ada transaksi yang cocok.</div>';
+  document.getElementById('txAll').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):es('🔍','Tidak ada transaksi yang cocok.');
 }
 function renderWallets(){
-  document.getElementById('walletList').innerHTML=accounts.map(a=>`
-    <div class="card" style="margin-bottom:10px"><div class="row" style="border:none;padding:0">
-      ${walletIcon(a)}
+  document.getElementById('walletList').innerHTML=accounts.map(a=>{
+    const row=`${walletIcon(a)}
       <div class="meta"><div class="n">${a.name}</div><div class="d">${a.brand&&BRANDS[a.brand]?BRANDS[a.brand].n:a.type}</div></div>
-      <div class="amt">${rp(accBalance(a.id))}</div>
-      <button class="x" onclick="editWallet(${a.id})" title="Edit">✎</button>
-      ${accounts.length>1?`<button class="x" onclick="delWallet(${a.id})">🗑</button>`:''}
-    </div></div>`).join('');
+      <div class="amt">${rp(accBalance(a.id))}</div>`;
+    const det=dline('Jenis',a.brand&&BRANDS[a.brand]?BRANDS[a.brand].n:a.type)+dline('Saldo',rp(accBalance(a.id)))+
+      `<div class="dbtns"><button class="dbtn edit" onclick="event.stopPropagation();editWallet(${a.id})">✎ Ubah</button>
+      ${accounts.length>1?`<button class="dbtn del" onclick="event.stopPropagation();delWallet(${a.id})">🗑 Hapus</button>`:''}</div>`;
+    return `<div class="card" style="margin-bottom:10px;padding:2px 14px">${titemHTML(row,det)}</div>`;
+  }).join('');
 }
 function renderGoals(){
   const html=goals.map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;
@@ -820,7 +917,7 @@ function renderGoals(){
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="mini-btn" onclick="addSaving(${g.id})">+ Nabung</button>
       ${g.saved>0?`<button class="mini-btn" onclick="withdrawGoal(${g.id})">↩ Tarik ke dompet</button>`:''}
       <button class="mini-btn" onclick="delGoal(${g.id})">Hapus</button></div></div>`;}).join('');
-  document.getElementById('goalList').innerHTML=html||'<div class="empty">Belum ada target. Yuk pasang target tabungan!</div>';
+  document.getElementById('goalList').innerHTML=html||es('🎯','Belum ada target. Yuk pasang target tabungan!');
   document.getElementById('goalMini').innerHTML=goals.slice(0,2).map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;
     return `<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><span>${g.name}</span><span class="small">${pct}%</span></div><div class="prog"><i style="width:${pct}%"></i></div></div>`;}).join('')
     ||'<div class="card"><div class="small">Belum ada target tabungan.</div></div>';
@@ -837,34 +934,34 @@ function renderDebts(){
      <div class="stat"><div class="t">Utang belum lunas</div><div class="v out">${rp(ut)}</div></div></div>`+toggle
     +(list.length?list.map(d=>{const pa=d.paidAmt||0;const rem=Math.max(0,d.amt-pa);const done=d.paid||rem<=0;
       const pct=d.amt?Math.min(100,Math.round(pa/d.amt*100)):0;
-      return `
-    <div class="card" style="margin-bottom:10px;${done?'opacity:.6':''}"><div class="row" style="border:none;padding:0">
-      <div class="meta"><div class="n">${d.person} ${done?'<span class="badge ok">Lunas</span>':dueBadge(d)}</div>
-      <div class="d">${d.note||''}${d.due?' · jatuh tempo '+d.due:''}</div>
-      ${pa>0&&!done?`<div class="d" style="margin-top:3px">Terbayar ${rp(pa)} / ${rp(d.amt)} · sisa <b>${rp(rem)}</b></div>
-      <div class="bar" style="margin-top:5px"><i style="width:${pct}%;background:var(--gold)"></i></div>`:''}</div>
-      <div class="amt">${rp(done?d.amt:rem)}</div></div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-      ${done?'':`<button class="mini-btn" onclick="payDebt(${d.id})">${d.kind==='utang'?'Bayar cicilan':'Terima bayaran'}</button>`}
-      <button class="mini-btn" onclick="toggleDebt(${d.id})">${done?'Tandai belum':'Lunaskan'}</button>
-      <button class="mini-btn" onclick="editDebt(${d.id})">Edit</button>
-      <button class="mini-btn" onclick="delDebt(${d.id})">Hapus</button></div></div>`;}).join('')
-    :`<div class="empty">${hidePaidDebt&&paidCount?'Semua sudah lunas (disembunyikan).':'Belum ada catatan.'}</div>`);
+      const row=`<div class="meta"><div class="n">${d.person} ${done?'<span class="badge ok">Lunas</span>':dueBadge(d)}</div>
+      <div class="d">${d.note||''}${d.due?' · jatuh tempo '+d.due:''}</div></div>
+      <div class="amt">${rp(done?d.amt:rem)}</div>`;
+      const det=(pa>0?dline('Terbayar',rp(pa)+' / '+rp(d.amt))+`<div class="bar" style="margin-top:-4px"><i style="width:${pct}%;background:var(--gold)"></i></div>`:'')+
+        (d.due?dline('Jatuh tempo',d.due):'')+(d.note?dnote('Catatan',d.note):'')+
+        `<div class="dbtns">
+        ${done?'':`<button class="dbtn edit" onclick="event.stopPropagation();payDebt(${d.id})">${d.kind==='utang'?'💳 Bayar cicilan':'💰 Terima bayaran'}</button>`}
+        <button class="dbtn" onclick="event.stopPropagation();toggleDebt(${d.id})">${done?'↺ Tandai belum':'✓ Lunaskan'}</button>
+        <button class="dbtn edit" onclick="event.stopPropagation();editDebt(${d.id})">✎ Ubah</button>
+        <button class="dbtn del" onclick="event.stopPropagation();delDebt(${d.id})">🗑 Hapus</button></div>`;
+      return `<div class="card" style="margin-bottom:10px;padding:2px 14px">${titemHTML(row,det,done)}</div>`;}).join('')
+    :es('🤝',hidePaidDebt&&paidCount?'Semua sudah lunas (disembunyikan).':'Belum ada catatan.'));
 }
 window.toggleHidePaid=()=>{hidePaidDebt=!hidePaidDebt;localStorage.setItem('sg_hidepaid',hidePaidDebt?'1':'0');render();};
 function renderRecur(){
   document.getElementById('recurList').innerHTML=recurring.length?recurring.map(r=>{const c=catInfo(r.type,r.cat);
-    return `<div class="card" style="margin-bottom:10px"><div class="row" style="border:none;padding:0">
-      <div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
+    const row=`<div class="ico" style="background:${c.c}22;color:${c.c}">${c.e}</div>
       <div class="meta"><div class="n">${r.note||c.n}</div><div class="d">Tiap tgl ${r.day} · ${accName(r.acc)} · ${c.n}</div></div>
-      <div class="amt ${r.type==='in'?'in':'out'}">${r.type==='in'?'+':'−'}${rp(r.amt)}</div>
-      <button class="x" onclick="delRecur(${r.id})">🗑</button></div></div>`;}).join('')
-    :'<div class="empty">Belum ada transaksi berulang (mis. gaji, langganan, cicilan).</div>';
+      <div class="amt ${r.type==='in'?'in':'out'}">${r.type==='in'?'+':'−'}${rp(r.amt)}</div>`;
+    const det=dline('Dompet',accName(r.acc))+dline('Kategori',c.e+' '+c.n)+dline('Tanggal',r.day)+
+      `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delRecur(${r.id})">🗑 Hapus</button></div>`;
+    return `<div class="card" style="margin-bottom:10px;padding:2px 14px">${titemHTML(row,det)}</div>`;}).join('')
+    :es('🔁','Belum ada transaksi berulang (mis. gaji, langganan, cicilan).');
 }
 function renderReport(sorted,tout){
   const ctx=document.getElementById('chart');
   if(chart)chart.destroy();
-  if(!sorted.length){document.getElementById('reportDetail').innerHTML='<div class="empty">Belum ada data bulan ini</div>';return;}
+  if(!sorted.length){document.getElementById('reportDetail').innerHTML=es('📈','Belum ada data bulan ini');return;}
   chart=new Chart(ctx,{type:'doughnut',data:{labels:sorted.map(([k])=>catInfo('out',k).n),
     datasets:[{data:sorted.map(([,v])=>v),backgroundColor:sorted.map(([k])=>catInfo('out',k).c),borderWidth:0}]},
     options:{cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:'#8a93a8',padding:12,font:{size:12},boxWidth:12}}}}});
@@ -875,7 +972,7 @@ function renderReport(sorted,tout){
 }
 function renderAdvice(tin,tout,byCat){
   const box=document.getElementById('adviceBox');const tips=[];
-  if(tin===0&&tout===0){box.innerHTML='<div class="empty">Mulai catat transaksi untuk dapat saran personal.</div>';return;}
+  if(tin===0&&tout===0){box.innerHTML=es('💡','Mulai catat transaksi untuk dapat saran personal.');return;}
   const rate=tin?(tin-tout)/tin*100:0;
   if(tin>0){if(rate>=20)tips.push(['🎉',`Mantap! Kamu menabung <b>${Math.round(rate)}%</b> dari pemasukan.`]);
     else if(rate>=0)tips.push(['⚠️',`Sisa uangmu <b>${Math.round(rate)}%</b>. Coba naikkan ke 20%.`]);
@@ -892,6 +989,11 @@ function renderAdvice(tin,tout,byCat){
   box.innerHTML=tips.map(([i,t])=>`<div class="advice"><div class="ico">${i}</div><div class="txt">${t}</div></div>`).join('');
 }
 
+window.toggleDetail=el=>{const item=el.closest('.titem');if(!item)return;
+  const willOpen=!item.classList.contains('open');
+  const parent=item.parentElement;
+  if(parent) Array.prototype.forEach.call(parent.children,x=>{if(x!==item&&x.classList&&x.classList.contains('open'))x.classList.remove('open');});
+  item.classList.toggle('open',willOpen);};
 // ---------- ACTIONS ----------
 window.delTx=id=>{const t=data.find(x=>x.id===id);if(!t)return;
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
@@ -1504,6 +1606,7 @@ if(sb){
 fillFilters();applyRecurring();render();dailyNotif();updateSideExtra();
 try{ const _h=(location.hash||'').slice(1); if(TABS.indexOf(_h)>=0 && _h!=='home') showTab(_h); }catch(e){}
 if(!settings)openSettings();
+requestAnimationFrame(()=>{const bs=document.getElementById('bootSplash');if(bs){bs.classList.add('hide');setTimeout(()=>bs.remove(),400);}});
 // PWA service worker (only works when hosted)
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
