@@ -394,7 +394,7 @@
     <button data-tab="tx"><span class="tabico"><i class="ti ti-receipt-2"></i></span>Transaksi</button>
     <button data-tab="wallet"><span class="tabico"><i class="ti ti-wallet"></i></span>Dompet</button>
     <button data-tab="goal"><span class="tabico"><i class="ti ti-target-arrow"></i></span>Target</button>
-    <button data-tab="debt"><span class="tabico"><i class="ti ti-handshake"></i></span>Utang</button>
+    <button data-tab="debt"><span class="tabico"><i class="ti ti-cash-banknote"></i></span>Utang</button>
     <button data-tab="recur"><span class="tabico"><i class="ti ti-repeat"></i></span>Berulang</button>
     <button data-tab="split"><span class="tabico"><i class="ti ti-users"></i></span>Split Bill</button>
     <button data-tab="report"><span class="tabico"><i class="ti ti-chart-pie"></i></span>Laporan</button>
@@ -433,7 +433,7 @@
       <div class="menu-t">Menu Utama</div>
       <div class="menu-grid">
         <button data-goto="goal"><span class="mi"><i class="ti ti-target-arrow"></i></span>Target</button>
-        <button data-goto="debt"><span class="mi"><i class="ti ti-handshake"></i></span>Utang</button>
+        <button data-goto="debt"><span class="mi"><i class="ti ti-cash-banknote"></i></span>Utang</button>
         <button data-goto="recur"><span class="mi"><i class="ti ti-repeat"></i></span>Berulang</button>
         <button data-goto="split"><span class="mi"><i class="ti ti-users"></i></span>Split Bill</button>
         <button data-goto="report"><span class="mi"><i class="ti ti-chart-pie"></i></span>Laporan</button>
@@ -923,7 +923,7 @@ function dnote(l,v){return `<div class="dnote"><span class="dl">${l}</span><div 
 function txRowHTML(t,withAcc){
   if(t.type==='debt'){const inn=t.dir==='in';
     let lbl=t.kind?(t.origin?(t.kind==='piutang'?'Beri pinjaman':'Terima pinjaman'):(t.kind==='piutang'?'Terima piutang':'Bayar utang')):(inn?'Terima piutang':'Bayar utang');
-    const row=`<div class="ico" style="background:${inn?'#4ade80':'#f87171'};color:#fff"><i class="ti ti-handshake"></i></div>
+    const row=`<div class="ico" style="background:${inn?'#4ade80':'#f87171'};color:#fff"><i class="ti ti-cash-banknote"></i></div>
     <div class="meta"><div class="n">${lbl}${t.person?': '+t.person:''}</div><div class="d">${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div>`;
     const det=dline('Dompet',accName(t.acc))+dline('Jenis',lbl)+dline('Waktu',tlabel(t))+
@@ -1032,7 +1032,7 @@ function renderDebts(){
         <button class="dbtn edit" onclick="event.stopPropagation();editDebt(${d.id})"><i class="ti ti-edit"></i> Ubah</button>
         <button class="dbtn del" onclick="event.stopPropagation();delDebt(${d.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
       return `<div class="card" style="margin-bottom:10px;padding:2px 14px">${titemHTML(row,det,done)}</div>`;}).join('')
-    :es('ti ti-handshake',hidePaidDebt&&paidCount?'Semua sudah lunas (disembunyikan).':'Belum ada catatan.'));
+    :es('ti ti-cash-banknote',hidePaidDebt&&paidCount?'Semua sudah lunas (disembunyikan).':'Belum ada catatan.'));
 }
 window.toggleHidePaid=()=>{hidePaidDebt=!hidePaidDebt;localStorage.setItem('sg_hidepaid',hidePaidDebt?'1':'0');render();};
 function renderRecur(){
