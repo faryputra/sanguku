@@ -222,6 +222,40 @@
   }
   @media (min-width:1340px){ .content{max-width:1000px} }
   .small{font-size:12px;color:var(--muted)}
+  /* ===== NAV BARU ===== */
+  .tabs .ti{display:none}
+  .side-extra{display:none}
+  .se-btn{width:100%;text-align:left;background:none;border:none;color:var(--muted);font-weight:600;font-size:14px;
+    padding:10px 14px;border-radius:10px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:9px}
+  .se-btn:hover{background:var(--card2);color:var(--txt)}
+  .se-btn.danger{color:var(--red)}
+  .menu-card{display:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+  .menu-t{font-weight:700;font-size:15px;margin-bottom:12px}
+  .menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .menu-grid button{background:none;border:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;
+    align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:600}
+  .menu-grid button .mi{width:52px;height:52px;border-radius:15px;background:var(--card2);display:grid;place-items:center;font-size:22px;transition:.12s}
+  .menu-grid button:active .mi{transform:scale(.92)}
+  .bottom-nav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--bg2);border-top:1px solid var(--line);
+    padding:8px 8px calc(8px + env(safe-area-inset-bottom));align-items:center;justify-content:space-around}
+  .bottom-nav button{background:none;border:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;
+    align-items:center;gap:3px;font-size:10px;color:var(--muted);font-weight:600;flex:1}
+  .bottom-nav button.active{color:var(--gold)}
+  .bottom-nav .bi{font-size:21px}
+  .bottom-nav .bn-fab{flex:0 0 auto;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+    color:#1a1408;font-size:30px;font-weight:800;margin-top:-26px;box-shadow:0 8px 20px rgba(230,192,104,.4);display:grid;place-items:center;line-height:1}
+  @media (max-width:999px){
+    #tabs{display:none}
+    .bottom-nav{display:flex}
+    .menu-card{display:block}
+    #fab{display:none}
+    body{padding-bottom:96px}
+  }
+  @media (min-width:1000px){
+    .tabs .ti{display:inline-block;width:20px;text-align:center;flex:0 0 auto}
+    .tabs button{display:flex;align-items:center;gap:10px}
+    .side-extra{display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:8px;margin-top:12px;gap:2px}
+  }
   .chip{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:99px;
     padding:3px 9px;font-size:11px;color:var(--muted);margin-left:6px}
 </style>
@@ -249,20 +283,25 @@
   <div class="sidebar">
   <div id="acctNav" class="acct-nav"></div>
   <div class="tabs" id="tabs">
-    <button class="active" data-tab="home">Beranda</button>
-    <button data-tab="tx">Transaksi</button>
-    <button data-tab="wallet">Dompet</button>
-    <button data-tab="goal">Target</button>
-    <button data-tab="debt">Utang</button>
-    <button data-tab="recur">Berulang</button>
-    <button data-tab="split">Split Bill</button>
-    <button data-tab="report">Laporan</button>
-    <button data-tab="tips">Saran</button>
-    <button data-tab="cats">Kategori</button>
+    <button class="active" data-tab="home"><span class="ti">🏠</span>Beranda</button>
+    <button data-tab="tx"><span class="ti">📄</span>Transaksi</button>
+    <button data-tab="wallet"><span class="ti">👛</span>Dompet</button>
+    <button data-tab="goal"><span class="ti">🎯</span>Target</button>
+    <button data-tab="debt"><span class="ti">🤝</span>Utang</button>
+    <button data-tab="recur"><span class="ti">🔁</span>Berulang</button>
+    <button data-tab="split"><span class="ti">🧾</span>Split Bill</button>
+    <button data-tab="report"><span class="ti">📊</span>Laporan</button>
+    <button data-tab="tips"><span class="ti">💡</span>Saran</button>
+    <button data-tab="cats"><span class="ti">🏷️</span>Kategori</button>
+    <button data-tab="profil"><span class="ti">👤</span>Profil</button>
     <div class="soon-label">SEGERA HADIR</div>
-    <button class="soon" data-soon="Kasir / POS">Kasir <span class="soon-badge">Soon</span></button>
-    <button class="soon" data-soon="Stok &amp; Produk">Stok <span class="soon-badge">Soon</span></button>
-    <button class="soon" data-soon="Data Pelanggan">Pelanggan <span class="soon-badge">Soon</span></button>
+    <button class="soon" data-soon="Kasir / POS"><span class="ti">🧮</span>Kasir <span class="soon-badge">Soon</span></button>
+    <button class="soon" data-soon="Stok &amp; Produk"><span class="ti">📦</span>Stok <span class="soon-badge">Soon</span></button>
+    <button class="soon" data-soon="Data Pelanggan"><span class="ti">👥</span>Pelanggan <span class="soon-badge">Soon</span></button>
+  </div>
+  <div id="sideExtra" class="side-extra">
+    <button class="se-btn" id="sideTheme">🌙 Mode Gelap</button>
+    <button class="se-btn danger" id="sideLogout">⎋ Keluar</button>
   </div>
   </div><!-- /.sidebar -->
   <div class="content">
@@ -280,6 +319,19 @@
       <div class="stat"><div class="t">▼ Keluar bulan ini</div><div class="v out" id="totalOut">Rp0</div></div>
     </div>
     <div class="today-card" id="todayCard"></div>
+    <div class="menu-card" id="menuCard">
+      <div class="menu-t">Menu Utama</div>
+      <div class="menu-grid">
+        <button data-goto="goal"><span class="mi">🎯</span>Target</button>
+        <button data-goto="debt"><span class="mi">🤝</span>Utang</button>
+        <button data-goto="recur"><span class="mi">🔁</span>Berulang</button>
+        <button data-goto="split"><span class="mi">🧾</span>Split Bill</button>
+        <button data-goto="report"><span class="mi">📊</span>Laporan</button>
+        <button data-goto="tips"><span class="mi">💡</span>Saran</button>
+        <button data-goto="cats"><span class="mi">🏷️</span>Kategori</button>
+        <button data-goto="profil"><span class="mi">👤</span>Profil</button>
+      </div>
+    </div>
     <div class="card dash-prog"><div class="dash-t">Progres Pengeluaran <span>· aturan 50/30/20</span></div><div id="progWrap"></div></div>
     <h2>Aktivitas Bulan Ini</h2>
     <div class="card"><div id="calHeat"></div></div>
@@ -390,11 +442,24 @@
     <h2>Kelola Kategori</h2>
     <div id="catTabBody"></div>
   </div>
+
+  <!-- PROFIL -->
+  <div id="tab-profil" class="hidden">
+    <h2>Profil & Akun</h2>
+    <div id="profilBody"></div>
+  </div>
   </div><!-- /.content -->
   </div><!-- /.shell -->
 </div>
 
 <button class="fab" id="fab">+</button>
+<nav class="bottom-nav" id="bottomNav">
+  <button data-tab="home"><span class="bi">🏠</span><span>Beranda</span></button>
+  <button data-tab="wallet"><span class="bi">👛</span><span>Dompet</span></button>
+  <button class="bn-fab" id="bnFab">+</button>
+  <button data-tab="tx"><span class="bi">📄</span><span>Transaksi</span></button>
+  <button data-tab="profil"><span class="bi">👤</span><span>Profil</span></button>
+</nav>
 <div class="toast" id="toast"><span id="toastMsg">Dihapus</span><button id="undoBtn">Urungkan</button></div>
 
 <!-- ADD TRANSACTION -->
@@ -887,17 +952,46 @@ window.updateDebt=id=>{const d=debts.find(x=>x.id===id);if(!d)return;
 window.delRecur=id=>{if(confirm('Hapus transaksi berulang?')){recurring=recurring.filter(r=>r.id!==id);saveAll();render();}};
 
 // ---------- TABS ----------
+const TABS=['home','tx','wallet','goal','debt','recur','split','report','tips','cats','profil'];
 function showTab(name){
+  if(TABS.indexOf(name)<0)name='home';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
-  ['home','tx','wallet','goal','debt','recur','split','report','tips','cats'].forEach(t=>
-    document.getElementById('tab-'+t).classList.toggle('hidden',t!==name));
+  document.querySelectorAll('#bottomNav button[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  TABS.forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('hidden',t!==name);});
   if(name==='cats')renderCats();
+  if(name==='profil')renderProfil();
   if(name==='report'){if(chart)chart.resize();if(trendChart)trendChart.resize();}
+  window.scrollTo(0,0);
 }
+function navTo(name){ if(('#'+name)!==location.hash){ try{history.pushState({t:name},'','#'+name);}catch(e){} } showTab(name); }
+window.addEventListener('popstate',function(){ const n=(location.hash||'').slice(1); showTab(TABS.indexOf(n)>=0?n:'home'); });
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   if(b.classList.contains('soon')){alert('🔒 '+(b.dataset.soon||'Fitur')+' — segera hadir! Nantikan update berikutnya 😊');return;}
-  showTab(b.dataset.tab);});
-document.querySelectorAll('[data-goto]').forEach(e=>e.onclick=()=>showTab(e.dataset.goto));
+  navTo(b.dataset.tab);});
+document.querySelectorAll('#bottomNav button[data-tab]').forEach(b=>b.onclick=()=>navTo(b.dataset.tab));
+document.getElementById('bnFab').onclick=()=>document.getElementById('fab').click();
+document.querySelectorAll('[data-goto]').forEach(e=>e.onclick=()=>navTo(e.dataset.goto));
+// sidebar bawah (mode + keluar)
+function updateSideExtra(){ const st=document.getElementById('sideTheme'); if(st)st.textContent=(theme==='light'?'🌙 Mode Gelap':'☀️ Mode Terang');
+  const sl=document.getElementById('sideLogout'); if(sl)sl.textContent=currentUser?'⎋ Keluar':'➜ Masuk'; }
+document.getElementById('sideTheme').onclick=()=>{ setTheme(theme==='light'?'dark':'light'); updateSideExtra(); };
+document.getElementById('sideLogout').onclick=()=>{ if(currentUser) acctLogout(); else openAcct(); };
+function renderProfil(){ const b=document.getElementById('profilBody'); if(!b)return;
+  const acc = !sb ? '<div class="small" style="margin-bottom:6px">Login butuh koneksi internet.</div>'
+    : currentUser ? '<div class="small" style="margin-bottom:10px">Masuk sebagai <b style="color:var(--gold)">'+currentUser.email+'</b> · tersinkron ✓</div><div class="grid2"><button class="ghost-btn" style="margin:0" onclick="acctPull()">⬇ Tarik data terbaru</button><button class="ghost-btn" style="margin:0" onclick="acctLogout()">Keluar</button></div>'
+    : '<div class="small" style="margin-bottom:10px">Login untuk menyimpan & sinkron data di semua perangkat.</div><button class="ghost-btn" onclick="openAcct()">Masuk / Daftar</button>';
+  b.innerHTML='<div class="card" style="margin-bottom:14px"><div class="dash-t">☁️ Akun</div>'+acc+'</div>'
+    +'<div class="card" style="margin-bottom:14px"><div class="dash-t">Tampilan</div>'
+    +'<label class="small">Tema</label><div class="seg" id="profTheme"><button data-th="dark">🌙 Gelap</button><button data-th="light">☀️ Terang</button></div>'
+    +'<label class="small" style="margin-top:10px;display:block">Warna aksen</label><div class="accent-row" id="profAccent"></div></div>'
+    +'<button class="ghost-btn" onclick="openSettings()">⚙ Buka Pengaturan lengkap</button>';
+  const pt=document.getElementById('profTheme');
+  pt.querySelector('[data-th="dark"]').className=theme==='dark'?'active':''; pt.querySelector('[data-th="light"]').className=theme==='light'?'active':'';
+  pt.querySelectorAll('button').forEach(x=>x.onclick=()=>{ setTheme(x.dataset.th); updateSideExtra(); renderProfil(); });
+  const pa=document.getElementById('profAccent');
+  pa.innerHTML=Object.keys(ACCENTS).map(k=>'<button type="button" style="background:'+ACCENTS[k][0]+(accent===k?';border-color:var(--txt)':'')+'" data-acc="'+k+'"></button>').join('');
+  pa.querySelectorAll('button').forEach(x=>x.onclick=()=>{ accent=x.dataset.acc; localStorage.setItem('sg_accent',accent); applyAccent(accent); renderProfil(); render(); });
+}
 document.getElementById('prevMonth').onclick=()=>{view.setMonth(view.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+1);render();};
 document.getElementById('txSearch').oninput=renderTxAll;
@@ -1359,6 +1453,8 @@ function renderAccount(){
         +'<label style="font-size:13px;color:var(--muted)">Password</label><input id="acPass" type="password" placeholder="Min. 6 karakter" autocomplete="current-password">'
         +'<div class="grid2" style="margin-top:8px"><button class="ghost-btn" id="acLogin" style="margin:0" onclick="acctLogin()">Masuk</button><button class="save-btn" id="acReg" style="margin:0" onclick="acctRegister()">Daftar</button></div></div>'; }
   }
+  try{updateSideExtra();}catch(e){}
+  try{ if(!document.getElementById('tab-profil').classList.contains('hidden')) renderProfil(); }catch(e){}
 }
 window.openAcct=function(){ renderAccount(); document.getElementById('ovAcct').classList.add('show'); };
 window.acctLogin=acctLogin;window.acctRegister=acctRegister;window.acctLogout=acctLogout;window.acctPull=acctPull;
@@ -1385,7 +1481,8 @@ if(sb){
   });
 }
 
-fillFilters();applyRecurring();render();dailyNotif();
+fillFilters();applyRecurring();render();dailyNotif();updateSideExtra();
+try{ const _h=(location.hash||'').slice(1); if(TABS.indexOf(_h)>=0 && _h!=='home') showTab(_h); }catch(e){}
 if(!settings)openSettings();
 // PWA service worker (only works when hosted)
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
