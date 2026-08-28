@@ -408,6 +408,7 @@
     <button data-tab="tips"><span class="tabico"><i class="ti ti-bulb"></i></span>Saran</button>
     <button data-tab="cats"><span class="tabico"><i class="ti ti-tags"></i></span>Kategori</button>
     <button data-tab="profil"><span class="tabico"><i class="ti ti-user-circle"></i></span>Profil</button>
+    <button data-tab="tools"><span class="tabico"><i class="ti ti-calculator"></i></span>Kalkulator HPP</button>
     <div class="soon-label">SEGERA HADIR</div>
     <button class="soon" data-soon="Kasir / POS"><span class="tabico"><i class="ti ti-device-desktop-analytics"></i></span>Kasir <span class="soon-badge">Soon</span></button>
     <button class="soon" data-soon="Stok &amp; Produk"><span class="tabico"><i class="ti ti-package"></i></span>Stok <span class="soon-badge">Soon</span></button>
@@ -447,6 +448,7 @@
         <button data-goto="tips"><span class="mi"><i class="ti ti-bulb"></i></span>Saran</button>
         <button data-goto="cats"><span class="mi"><i class="ti ti-tags"></i></span>Kategori</button>
         <button data-goto="profil"><span class="mi"><i class="ti ti-user-circle"></i></span>Profil</button>
+        <button data-goto="tools"><span class="mi"><i class="ti ti-calculator"></i></span>Kalkulator HPP</button>
       </div>
     </div>
     <div style="grid-column:1/3;grid-row:6"><h2>Pengeluaran per Kategori</h2>
@@ -559,6 +561,25 @@
   <div id="tab-profil" class="hidden">
     <h2>Profil & Akun</h2>
     <div id="profilBody"></div>
+  </div>
+
+  <!-- TOOLS: KALKULATOR HPP -->
+  <div id="tab-tools" class="hidden">
+    <h2>Kalkulator HPP & Harga Jual <span class="chip">buat usaha kamu</span></h2>
+    <div class="card">
+      <label>Total biaya bahan baku (Rp)</label><input id="hppBahan" data-money type="tel" inputmode="numeric" placeholder="0">
+      <label>Total biaya operasional (tenaga, kemasan, listrik, dll) (Rp)</label><input id="hppOps" data-money type="tel" inputmode="numeric" placeholder="0">
+      <label>Jumlah unit dihasilkan</label><input id="hppQty" type="tel" inputmode="numeric" placeholder="mis. 50">
+      <label>Margin keuntungan diinginkan (%)</label><input id="hppMargin" type="tel" inputmode="numeric" placeholder="mis. 30">
+      <div class="quick-date" id="hppMarginPreset">
+        <button type="button" data-m="20">20%</button>
+        <button type="button" data-m="30">30%</button>
+        <button type="button" data-m="40">40%</button>
+        <button type="button" data-m="50">50%</button>
+      </div>
+      <button class="save-btn" id="hppCalc" style="margin-top:14px">Hitung HPP & Harga Jual</button>
+    </div>
+    <div id="hppResult"></div>
   </div>
   </div><!-- /.content -->
   </div><!-- /.shell -->
@@ -1245,7 +1266,7 @@ window.updateDebt=id=>{const d=debts.find(x=>x.id===id);if(!d)return;
 window.delRecur=id=>{if(confirm('Hapus transaksi berulang?')){recurring=recurring.filter(r=>r.id!==id);saveAll();render();}};
 
 // ---------- TABS ----------
-const TABS=['home','tx','wallet','goal','debt','recur','split','report','tips','cats','profil'];
+const TABS=['home','tx','wallet','goal','debt','recur','split','report','tips','cats','profil','tools'];
 function showTab(name){
   if(TABS.indexOf(name)<0)name='home';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
@@ -1651,6 +1672,31 @@ document.getElementById('sbCalc').onclick=()=>{
   document.getElementById('sbShare').onclick=()=>window.open(waLink(msg),'_blank');
   document.getElementById('sbToDebt').onclick=()=>{people.forEach(p=>debts.push({id:Date.now()+Math.random(),kind:'piutang',person:p,amt:per,note:'Split: '+name,due:'',paid:false}));
     saveAll();alert('Tersimpan ke Piutang ('+people.length+' orang).');render();};
+};
+
+// ---------- TOOLS: KALKULATOR HPP ----------
+fmt(document.getElementById('hppBahan'));
+fmt(document.getElementById('hppOps'));
+document.querySelectorAll('#hppMarginPreset button').forEach(b=>b.onclick=()=>{document.getElementById('hppMargin').value=b.dataset.m;});
+document.getElementById('hppCalc').onclick=()=>{
+  const bahan=Number(document.getElementById('hppBahan').value.replace(/\D/g,''))||0;
+  const ops=Number(document.getElementById('hppOps').value.replace(/\D/g,''))||0;
+  const qty=Number(document.getElementById('hppQty').value.replace(/\D/g,''))||0;
+  const marginRaw=Number(document.getElementById('hppMargin').value.replace(/\D/g,''))||0;
+  const res=document.getElementById('hppResult');
+  if(!bahan&&!ops){res.innerHTML='<div class="empty">Isi biaya bahan baku atau operasional dulu.</div>';return;}
+  if(!qty){res.innerHTML='<div class="empty">Isi jumlah unit yang dihasilkan.</div>';return;}
+  const margin=Math.min(marginRaw,95);
+  const hpp=(bahan+ops)/qty;
+  const harga=margin>0?hpp/(1-margin/100):hpp;
+  const untung=harga-hpp;
+  const totalUntung=untung*qty;
+  res.innerHTML=`<div class="card" style="margin-top:14px">
+    <div class="sb-line"><span>HPP per unit</span><span class="am">${rp(hpp)}</span></div>
+    <div class="sb-line"><span>Harga jual disarankan${marginRaw>95?' (margin dibatasi 95%)':''}</span><span class="am">${rp(harga)}</span></div>
+    <div class="sb-line"><span>Untung per unit</span><span class="am">${rp(untung)}</span></div>
+    <div class="sb-total"><span>Estimasi untung ${qty} unit terjual</span><span style="color:var(--gold)">${rp(totalUntung)}</span></div>
+  </div>`;
 };
 
 // ---------- INIT ----------
