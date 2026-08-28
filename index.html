@@ -806,9 +806,26 @@ function calcStreak(){
   while(days.has(d.toDateString())){ n++; d.setDate(d.getDate()-1); }
   return n;
 }
+function weekSums(){const D=864e5,now=Date.now();
+  const s=(a,b)=>data.filter(t=>t.type==='out'&&t.ts&&t.ts>=a&&t.ts<b).reduce((x,t)=>x+t.amt,0);
+  return {thisW:s(now-7*D,now+1),lastW:s(now-14*D,now-7*D)};}
 let CATS=L(PK('cats'),'null'); if(!CATS||!CATS.out||!CATS.in)CATS=JSON.parse(JSON.stringify(DEFAULT_CATS));
 const saveCats=()=>localStorage.setItem(PK('cats'),JSON.stringify(CATS));
-let curType='out',curCat='makan',curPhoto='',editId=null,debtKind='utang';
+let curType='out',curCat='makan',curPhoto='',editId=null,debtKind='utang',_catManual=false;
+const CAT_KW={
+  makan:['makan','nasi','ayam','bakso','mie','warteg','resto','sarapan','dinner','lunch','gofood','grabfood','jajan','snack','cemilan','padang','geprek','sate','soto','martabak','roti','burger','pizza','seblak'],
+  kopi:['kopi','coffee','starbuck','espresso','latte','cafe','kafe','ngopi','kopken','cappuccino'],
+  transport:['bensin','pertalite','pertamax','solar','grab','gojek','ojek','ojol','parkir','tol','busway','mrt','krl','angkot','transport','taksi','spbu','bbm','isi bensin'],
+  belanja:['belanja','baju','sepatu','shopee','tokopedia','lazada','mall','skincare','kosmetik','sabun','tas','celana','kaos','online shop','olshop'],
+  tagihan:['listrik','pln','pdam','air','wifi','internet','indihome','pulsa','token','bpjs','cicilan','sewa','kontrakan','tagihan','kuota','langganan'],
+  hiburan:['nonton','bioskop','netflix','spotify','game','steam','wisata','liburan','tiket','konser','main','youtube','karaoke'],
+  sehat:['obat','dokter','apotik','apotek','rumah sakit','vitamin','klinik','medis','gym','fitness','sakit'],
+  gaji:['gaji','salary','upah'],
+  bonus:['bonus','hadiah','cashback','thr'],
+  usaha:['usaha','jualan','dagang','omzet','penjualan','laba','client','klien','proyek','orderan','order masuk']
+};
+function guessCat(note){const n=(note||'').toLowerCase();if(!n)return null;
+  for(const k in CAT_KW){ if(CAT_KW[k].some(w=>n.includes(w))) return k; } return null;}
 const now=new Date();
 let view=new Date(now.getFullYear(),now.getMonth(),1);
 const mkey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -947,8 +964,18 @@ function render(){
   const tdIn=td.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);
   const tdOut=td.filter(t=>t.type==='out').reduce((s,t)=>s+t.amt,0);
   const _streak=calcStreak();
+  const wk=weekSums();
+  let wkLine='';
+  if(wk.thisW>0||wk.lastW>0){
+    if(wk.lastW>0){const dp=Math.round((wk.thisW-wk.lastW)/wk.lastW*100);
+      const up=dp>0;const col=up?'var(--red)':'var(--green)';const ar=up?'▲':(dp<0?'▼':'•');
+      wkLine=`<div class="streak-row" style="color:var(--muted)"><i class="ti ti-chart-histogram"></i> 7 hari terakhir <b style="color:var(--txt)">${rp(wk.thisW)}</b> <span style="color:${col};font-weight:700">${ar} ${Math.abs(dp)}%</span> <span style="opacity:.7">vs 7 hari sebelumnya</span></div>`;
+    }else{
+      wkLine=`<div class="streak-row" style="color:var(--muted)"><i class="ti ti-chart-histogram"></i> Pengeluaran 7 hari terakhir <b style="color:var(--txt)">${rp(wk.thisW)}</b></div>`;
+    }
+  }
   document.getElementById('todayCard').innerHTML=`<div class="tc-row"><span><i class="ti ti-calendar-event"></i> Hari ini</span><span class="tc-n"><b style="color:var(--green)">+${rp(tdIn)}</b> &nbsp;·&nbsp; <b style="color:var(--red)">−${rp(tdOut)}</b></span></div>`+
-    (_streak>=2?`<div class="streak-row"><i class="ti ti-flame"></i> <b>${_streak} hari</b> berturut-turut mencatat</div>`:'');
+    (_streak>=2?`<div class="streak-row"><i class="ti ti-flame"></i> <b>${_streak} hari</b> berturut-turut mencatat</div>`:'')+wkLine;
   document.getElementById('rIn').textContent=rp(tin);
   document.getElementById('rOut').textContent=rp(tout);
   // reminder banner
@@ -1088,7 +1115,9 @@ function renderTxAll(){
   if(fc)tx=tx.filter(t=>t.cat===fc);
   if(fa)tx=tx.filter(t=>String(t.acc)===fa||String(t.from)===fa||String(t.to)===fa);
   if(fg)tx=tx.filter(t=>t.tags&&t.tags.indexOf(fg)>=0);
-  if(q)tx=tx.filter(t=>((t.note||'')+' '+(CATS[t.type]?catInfo(t.type,t.cat).n:(t.type==='tf'?'transfer':'nabung'))+' '+((t.tags||[]).join(' '))).toLowerCase().includes(q));
+  if(q){const qd=q.replace(/\D/g,'');tx=tx.filter(t=>{
+    const hay=((t.note||'')+' '+(CATS[t.type]?catInfo(t.type,t.cat).n:(t.type==='tf'?'transfer':'nabung'))+' '+((t.tags||[]).join(' '))).toLowerCase();
+    return hay.includes(q)||(qd&&String(t.amt).includes(qd));});}
   const S={new:(a,b)=>(b.ts||b.id)-(a.ts||a.id),old:(a,b)=>(a.ts||a.id)-(b.ts||b.id),hi:(a,b)=>b.amt-a.amt,lo:(a,b)=>a.amt-b.amt};
   tx=tx.slice().sort(S[fs]||S.new);
   document.getElementById('txAll').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):es('ti ti-search','Tidak ada transaksi yang cocok.');
@@ -1115,6 +1144,7 @@ function renderGoals(){
       `<div class="dbtns">
       <button class="dbtn edit" onclick="event.stopPropagation();addSaving(${g.id})"><i class="ti ti-plus"></i> Nabung</button>
       ${g.saved>0?`<button class="dbtn" onclick="event.stopPropagation();withdrawGoal(${g.id})"><i class="ti ti-arrow-back-up"></i> Ambil</button>`:''}
+      <button class="dbtn" onclick="event.stopPropagation();shareGoal(${g.id})"><i class="ti ti-brand-whatsapp"></i> Bagikan</button>
       <button class="dbtn edit" onclick="event.stopPropagation();editGoal(${g.id})"><i class="ti ti-edit"></i> Ubah</button>
       <button class="dbtn del" onclick="event.stopPropagation();delGoal(${g.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
     return `<div class="card" style="margin-bottom:10px;padding:2px 14px">${titemHTML(row,det)}</div>`;}).join('');
@@ -1326,6 +1356,13 @@ window.saveWithdraw=id=>{const g=goals.find(x=>x.id===id);if(!g)return;
   g.saved-=n;const d=new Date();
   data.push({id:Date.now(),type:'wd',goal:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
   saveAll();ovGen.classList.remove('show');render();};
+window.shareGoal=id=>{const g=goals.find(x=>x.id===id);if(!g)return;
+  const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;
+  const fill=Math.round(pct/10);const bar='▰'.repeat(fill)+'▱'.repeat(10-fill);
+  const msg=`*${g.name}* 🎯\nProgres tabungan: ${pct}%\n${bar}\n${rp(g.saved)} / ${rp(g.target)}\n`+
+    (pct>=100?'Target tercapai! 🎉':`Sisa ${rp(Math.max(0,g.target-g.saved))} lagi menuju target 💪`)+
+    `\n\n_dicatat pakai SanguKu_`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');};
 window.editGoal=id=>{const g=goals.find(x=>x.id===id);if(!g)return;
   openGen(`<h3>Ubah Target</h3>
   <label>Nama target</label><input id="egName" value="${(g.name||'').replace(/"/g,'&quot;')}">
@@ -1481,7 +1518,10 @@ function fillAccSelect(sel){sel.innerHTML=accounts.map(a=>`<option value="${a.id
 function buildCatGrid(){document.getElementById('catGrid').innerHTML=CATS[curType].map(c=>
   `<button data-k="${c.k}" class="${c.k===curCat?'sel':''}"><span class="e">${catIcon(c.e)}</span>${c.n}</button>`).join('')
   +`<button data-mng="1" style="border-style:dashed"><span class="e"><i class="ti ti-settings"></i></span>Kelola</button>`;
-  document.querySelectorAll('#catGrid button').forEach(b=>b.onclick=()=>{if(b.dataset.mng){catTabType=curType;ovTx.classList.remove('show');document.querySelector('#tabs button[data-tab="cats"]').click();return;}curCat=b.dataset.k;buildCatGrid();});}
+  document.querySelectorAll('#catGrid button').forEach(b=>b.onclick=()=>{if(b.dataset.mng){catTabType=curType;ovTx.classList.remove('show');document.querySelector('#tabs button[data-tab="cats"]').click();return;}curCat=b.dataset.k;_catManual=true;buildCatGrid();});}
+document.getElementById('noteInput').oninput=function(){
+  if(_catManual)return;const g=guessCat(this.value);
+  if(g&&CATS[curType].some(c=>c.k===g)&&g!==curCat){curCat=g;buildCatGrid();}};
 function setType(t){curType=t;curCat=CATS[t][0].k;
   document.getElementById('segOut').className=t==='out'?'active out':'';
   document.getElementById('segIn').className=t==='in'?'active in':'';buildCatGrid();}
@@ -1496,9 +1536,11 @@ document.getElementById('fab').onclick=()=>{
   document.getElementById('dateInput').value=new Date().toISOString().slice(0,10);
   document.getElementById('photoInput').value='';document.getElementById('photoPrev').innerHTML='';curPhoto='';
   resetCalc();document.getElementById('calcRow').classList.remove('show');
+  _catManual=false;
   fillAccSelect(document.getElementById('accInput'));setType('out');renderFavs();ovTx.classList.add('show');};
 function editTx(id){const t=data.find(x=>x.id===id);if(!t)return;
   editId=id;document.getElementById('txTitle').textContent='Edit Transaksi';document.getElementById('saveBtn').textContent='Simpan Perubahan';
+  _catManual=true;
   fillAccSelect(document.getElementById('accInput'));setType(t.type);curCat=t.cat;buildCatGrid();
   document.getElementById('amtInput').value=Number(t.amt).toLocaleString('id-ID');
   document.getElementById('noteInput').value=t.note||'';
@@ -1527,7 +1569,7 @@ document.getElementById('saveBtn').onclick=()=>{
 function renderFavs(){const row=document.getElementById('favRow');if(!row)return;
   row.innerHTML=favs.map((f,i)=>`<span class="fav-chip" data-i="${i}">${f.note||catInfo(f.type,f.cat).n} · ${rp(f.amt)}<span class="fx" data-del="${i}">✕</span></span>`).join('');
   row.querySelectorAll('.fav-chip').forEach(ch=>ch.onclick=e=>{if(e.target.dataset.del!==undefined){favs.splice(Number(e.target.dataset.del),1);saveFavs();renderFavs();return;}applyFav(Number(ch.dataset.i));});}
-function applyFav(i){const f=favs[i];if(!f)return;setType(f.type);curCat=f.cat;buildCatGrid();
+function applyFav(i){const f=favs[i];if(!f)return;_catManual=true;setType(f.type);curCat=f.cat;buildCatGrid();
   document.getElementById('amtInput').value=f.amt?Number(f.amt).toLocaleString('id-ID'):'';
   document.getElementById('noteInput').value=f.note||'';document.getElementById('tagInput').value=(f.tags||[]).join(', ');
   if(f.acc&&accounts.some(a=>a.id===f.acc))document.getElementById('accInput').value=f.acc;}
@@ -1682,16 +1724,24 @@ function renderCats(){
   body.innerHTML=`<div class="seg" style="margin-bottom:12px">
      <button onclick="setCatTab('out')" class="${t==='out'?'active out':''}">Pengeluaran</button>
      <button onclick="setCatTab('in')" class="${t==='in'?'active in':''}">Pemasukan</button></div>
-   <div class="card" style="padding:6px 14px">${CATS[t].map(c=>`<div class="row">
+   ${t==='out'?'<div class="small" style="margin-bottom:8px"><i class="ti ti-target"></i> Isi <b>budget/bulan</b> per kategori — nanti muncul peringatan otomatis di Beranda kalau mendekati atau lewat batas.</div>':''}
+   <div class="card" style="padding:6px 14px">${CATS[t].map(c=>{const bud=settings&&settings.budgets?settings.budgets[c.k]:0;return `<div class="row">
        <div class="ico" style="background:${c.c};color:#fff">${catIcon(c.e)}</div>
-       <div class="meta"><div class="n">${c.n}</div></div>
+       <div class="meta"><div class="n">${c.n}</div>${t==='out'?`<input class="budgetInp" type="tel" inputmode="numeric" data-k="${c.k}" value="${bud?Number(bud).toLocaleString('id-ID'):''}" placeholder="Budget/bln (opsional)" style="margin:5px 0 0;padding:7px 10px;font-size:13px;height:auto">`:''}</div>
        <button class="mini-btn" onclick="renameCat('${t}','${c.k}')">Ubah</button>
-       <button class="mini-btn" onclick="delCat('${t}','${c.k}')">Hapus</button></div>`).join('')}</div>
+       <button class="mini-btn" onclick="delCat('${t}','${c.k}')">Hapus</button></div>`;}).join('')}</div>
    <div class="card" style="margin-top:12px">
      <label>Tambah kategori baru — ${t==='out'?'Pengeluaran':'Pemasukan'}</label>
      <div class="grid2"><input id="ctEmoji" maxlength="2" value="🏷️" style="text-align:center;font-size:20px"><input id="ctName" placeholder="Nama kategori"></div>
      <button class="save-btn" onclick="addCatTab('${t}')">+ Tambah Kategori</button>
      <div class="small" style="margin-top:8px">Tips: ketik/tempel 1 emoji di kotak kiri sebagai ikon.</div></div>`;
+  body.querySelectorAll('.budgetInp').forEach(inp=>{
+    inp.oninput=()=>{let v=inp.value.replace(/\D/g,'');inp.value=v?Number(v).toLocaleString('id-ID'):'';};
+    inp.onchange=()=>{if(!settings)settings={};if(!settings.budgets)settings.budgets={};
+      const v=Number(inp.value.replace(/\D/g,''))||0;
+      if(v)settings.budgets[inp.dataset.k]=v;else delete settings.budgets[inp.dataset.k];
+      saveAll();render();};
+  });
 }
 window.setCatTab=t=>{catTabType=t;renderCats();};
 window.addCatTab=t=>{const n=document.getElementById('ctName').value.trim();if(!n)return;
