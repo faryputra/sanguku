@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Daftar — SanguKu</title>
-<meta name="theme-color" content="#0d0f14">
+<meta name="theme-color" content="#f5f6f2">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
-  :root{--bg:#0d0f14;--card:#151922;--card2:#1b202b;--soft:#11151d;--line:#242a36;--txt:#eef1f6;--muted:#98a2b3;--gold:#e6c068;--gold2:#c89b3f;--red:#f87171;--green:#4ade80}
+  :root{--bg:#f5f6f2;--bg2:#ffffff;--card:#ffffff;--card2:#eef1f7;--soft:#f5f6f2;--line:#e5e7e0;--txt:#16181d;--muted:#6b7280;--gold:#c89b3f;--gold2:#b5892f;--goldl:#e6c068;--red:#dc2626;--green:#16a34a}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Sora',system-ui,sans-serif;background:radial-gradient(700px 380px at 50% -8%,#1a2030,transparent 60%),var(--bg);
+  body{font-family:'Sora',system-ui,sans-serif;background:radial-gradient(700px 380px at 50% -8%,rgba(230,192,104,.18),transparent 62%),var(--bg);
     color:var(--txt);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;-webkit-font-smoothing:antialiased}
   .shell{width:100%;max-width:420px}
   .brand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:16px}
-  .brand .dot{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;color:#1a1408;font-weight:900;font-size:26px}
+  .brand .dot{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,var(--goldl),var(--gold));display:grid;place-items:center;color:#1a1408;font-weight:900;font-size:26px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px}
   h1{text-align:center;font-size:19px;font-weight:800;margin-bottom:4px}
   .sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:20px}
@@ -29,17 +29,23 @@
   .detail{display:flex;justify-content:space-between;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .detail .old{color:var(--muted);text-decoration:line-through;font-size:14px}
   .detail .now{font-size:26px;font-weight:900;border-bottom:3px solid var(--gold);display:inline-block}
-  .save-band{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;font-weight:800;text-align:center;padding:12px;border-radius:12px;margin-bottom:16px;font-size:14px}
+  .save-band{background:linear-gradient(135deg,var(--goldl),var(--gold));color:#1a1408;font-weight:800;text-align:center;padding:12px;border-radius:12px;margin-bottom:16px;font-size:14px}
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 6px;font-weight:600}
   input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:13px;color:var(--txt);font-size:15px;font-family:inherit;outline:none}
   input:focus{border-color:var(--gold)}
   .btn{width:100%;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:16px;
-    background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;transition:.15s}
+    background:linear-gradient(135deg,var(--goldl),var(--gold));color:#1a1408;transition:.15s}
   .btn:hover{transform:translateY(-1px)} .btn:disabled{opacity:.6;cursor:not-allowed}
   .msg{display:none;font-size:13px;text-align:center;padding:11px;border-radius:11px;margin-top:12px}
   .foot{text-align:center;font-size:13px;color:var(--muted);margin-top:18px}
   .foot a{color:var(--gold);font-weight:700}
   #turnstile{margin-top:10px}
+  .divider{display:flex;align-items:center;gap:10px;margin:16px 0 2px;color:var(--muted);font-size:12px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+  .gbtn{width:100%;border:1px solid var(--line);border-radius:13px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;
+    background:var(--bg);color:var(--txt);display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;transition:.15s}
+  .gbtn:hover{border-color:var(--gold)}
+  .gbtn:disabled{opacity:.6;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -64,6 +70,22 @@
       <button class="btn" type="submit" id="btn">Lanjut ke Pembayaran →</button>
       <div class="msg" id="msg"></div>
     </form>
+
+    <div id="gWrap">
+      <div class="divider">atau</div>
+      <button type="button" class="gbtn" id="gBtn" onclick="signupGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.7 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.5 18.9 12 24 12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 15.9 3 8.9 7.6 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.3 0 10.1-2 13.7-5.4l-6.3-5.3C29.4 36 26.8 37 24 37c-5.3 0-9.8-3.4-11.4-8.1l-6.5 5C8.8 40.3 15.8 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.9 2.6-2.6 4.8-4.9 6.3l6.3 5.3C40.5 36.9 45 30.9 45 24c0-1.2-.1-2.4-.4-3.5z"/></svg>
+        Daftar dengan Google
+      </button>
+    </div>
+
+    <form id="gPhoneForm" style="display:none" onsubmit="return doGooglePhone(event)">
+      <div class="sub" style="margin-bottom:12px">Masuk sebagai <b id="gEmail" style="color:var(--gold)"></b>. Satu langkah lagi:</div>
+      <label>Nomor HP (WhatsApp)</label><input id="gPhone" type="tel" placeholder="08xxxxxxxxxx" required autocomplete="tel">
+      <button class="btn" type="submit" id="gPhoneBtn">Lanjut ke Pembayaran →</button>
+      <div class="msg" id="gMsg"></div>
+    </form>
+
     <div class="foot">Sudah punya akun? <a href="/login">Masuk</a></div>
   </div>
 </div>
@@ -82,6 +104,8 @@
   const sb=window.supabase.createClient(SUPA_URL,SUPA_ANON);
   const rp=n=>'Rp '+Number(n).toLocaleString('id-ID');
   let selected=PLANS[0].id;
+  const _pendingPlan=localStorage.getItem('sg_pending_plan');
+  if(_pendingPlan && PLANS.find(p=>p.id===_pendingPlan)) selected=_pendingPlan;
 
   function renderPlans(){
     document.getElementById('plans').innerHTML=PLANS.map(p=>`
@@ -125,6 +149,36 @@
       btn.disabled=false; btn.textContent='Lanjut ke Pembayaran →'; return false;
     }
     goPay(email);
+    return false;
+  }
+
+  // balik dari Google OAuth -> udah login, minta nomor WA lalu lanjut ke pembayaran
+  sb.auth.getSession().then(function(r){
+    if(r && r.data && r.data.session){
+      const user=r.data.session.user;
+      document.getElementById('f').style.display='none';
+      document.getElementById('gWrap').style.display='none';
+      document.getElementById('gEmail').textContent=user.email;
+      document.getElementById('gPhoneForm').style.display='block';
+    }
+  });
+
+  async function signupGoogle(){
+    localStorage.setItem('sg_pending_plan',selected);
+    const g=document.getElementById('gBtn'); g.disabled=true;
+    const {error}=await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin+'/daftar' } });
+    if(error){ showMsg('Gagal daftar dengan Google: '+error.message,false); g.disabled=false; }
+  }
+
+  async function doGooglePhone(e){
+    e.preventDefault();
+    const phone=document.getElementById('gPhone').value.trim();
+    if(!phone){ document.getElementById('gMsg').style.display='block';document.getElementById('gMsg').textContent='Isi nomor WhatsApp dulu.';document.getElementById('gMsg').style.color='var(--red)';document.getElementById('gMsg').style.background='rgba(248,113,113,.1)'; return false; }
+    const btn=document.getElementById('gPhoneBtn'); btn.disabled=true; btn.textContent='Memproses...';
+    try{ await sb.auth.updateUser({ data:{ phone, plan:selected } }); }catch(e){}
+    localStorage.removeItem('sg_pending_plan');
+    const {data}=await sb.auth.getUser();
+    goPay(data.user.email);
     return false;
   }
 </script>
