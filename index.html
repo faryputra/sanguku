@@ -378,6 +378,53 @@
     .prog i,.pbar-t i,.cat .bar i,.meta .bar i,.tab-anim,.ripple-ink{animation:none}
     .ring{transition:none}
   }
+  /* ===== UI POLISH PACK 2 ===== */
+  .greet{font-size:14px;color:var(--muted);margin:-4px 0 12px;font-weight:600}
+  .greet b{color:var(--txt)}
+  /* swipe to action (mobile) */
+  .titem[data-swid]{position:relative;overflow:hidden}
+  .sw-hint{position:absolute;top:3px;bottom:3px;width:92px;display:flex;align-items:center;justify-content:center;font-size:21px;z-index:0}
+  .sw-edit{left:0;background:var(--gold);color:#1a1408}
+  .sw-del{right:0;background:var(--red);color:#fff}
+  .titem[data-swid] .row{position:relative;z-index:1;background:var(--card)}
+  .titem[data-swid] .row:active{background:var(--card2)}
+  .titem[data-swid].sw-anim .row{transition:transform .22s cubic-bezier(.4,0,.2,1),background .2s}
+  /* sticky date separators */
+  .date-sep{position:sticky;top:52px;z-index:6;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+    text-transform:uppercase;background:var(--card);padding:10px 2px 6px;margin:0 -4px}
+  .date-sep span{color:var(--gold)}
+  /* success check */
+  .saved-pop{position:fixed;inset:0;z-index:300;display:grid;place-items:center;pointer-events:none}
+  .saved-pop .chk{width:94px;height:94px;border-radius:50%;background:var(--green);display:grid;place-items:center;
+    color:#fff;font-size:50px;box-shadow:0 18px 50px rgba(22,163,74,.45);animation:chkPop .5s cubic-bezier(.2,1.3,.4,1)}
+  @keyframes chkPop{0%{transform:scale(0);opacity:0}55%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
+  .saved-pop.out{animation:spFade .3s ease forwards}
+  @keyframes spFade{to{opacity:0}}
+  /* insight card */
+  .insight{background:linear-gradient(135deg,rgba(230,192,104,.15),rgba(230,192,104,.03));border:1px solid var(--line);
+    border-radius:16px;padding:13px 15px;display:flex;align-items:center;gap:13px;cursor:pointer;min-height:64px}
+  .insight .ii{width:42px;height:42px;border-radius:12px;background:var(--card2);display:grid;place-items:center;font-size:21px;color:var(--gold);flex-shrink:0}
+  .insight .it{flex:1;min-width:0}
+  .insight .it .k{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .insight .it .v{font-size:14px;font-weight:600;margin-top:2px;line-height:1.35}
+  .insight .dots{display:flex;gap:4px;flex-direction:column}
+  .insight .dots span{width:5px;height:5px;border-radius:50%;background:var(--line);transition:.2s}
+  .insight .dots span.on{background:var(--gold)}
+  /* color picker */
+  .color-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .color-row button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+  .color-row button.sel{border-color:var(--txt);box-shadow:0 0 0 2px var(--bg) inset}
+  /* month compare */
+  .mc-wrap{display:flex;align-items:flex-end;justify-content:space-around;height:130px;padding:10px 0 0}
+  .mc-col{display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end;flex:1}
+  .mc-bars{display:flex;gap:7px;align-items:flex-end;height:100%}
+  .mc-bar{width:24px;border-radius:6px 6px 0 0;min-height:3px;transition:height .5s cubic-bezier(.4,0,.2,1)}
+  .mc-bar.in{background:var(--green)} .mc-bar.out{background:var(--red)}
+  .mc-lbl{font-size:11.5px;color:var(--muted);font-weight:600}
+  /* circular theme reveal (View Transitions) */
+  ::view-transition-old(root){animation:none}
+  ::view-transition-new(root){animation:vtReveal .45s ease}
+  @keyframes vtReveal{from{clip-path:circle(0% at var(--rx,50%) var(--ry,0px))}to{clip-path:circle(150% at var(--rx,50%) var(--ry,0px))}}
 </style>
 </head>
 <body>
@@ -420,6 +467,7 @@
       <button class="mnav" id="nextMonth">›</button>
     </div>
   </header>
+  <div id="greetBar" class="greet"></div>
 
   <div id="profileBar" style="display:none;margin-bottom:12px">
     <button id="profileBtn" style="width:100%;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:var(--txt);cursor:pointer;font-size:14px">
@@ -466,6 +514,7 @@
       <div class="small" id="netWorthLine" style="margin-top:8px"></div>
       <div class="bal-spark" id="balSpark"></div>
     </div>
+    <div id="insightWrap" style="grid-column:1/3;grid-row:6"></div>
     <div class="card dash-prog" style="grid-column:2;grid-row:2"><div class="dash-t">Progres Pengeluaran <span>· aturan 50/30/20</span></div><div id="progWrap"></div></div>
     <div class="stat-row" style="grid-column:1;grid-row:3">
       <div class="stat"><div class="t">▲ Masuk bulan ini</div><div class="v in" id="totalIn">Rp0</div></div>
@@ -577,6 +626,8 @@
       <div class="stat"><div class="t">Pemasukan</div><div class="v in" id="rIn">Rp0</div></div>
       <div class="stat"><div class="t">Pengeluaran</div><div class="v out" id="rOut">Rp0</div></div>
     </div>
+    <h2 style="margin-top:4px">Bulan Ini vs Bulan Lalu</h2>
+    <div class="card" style="margin-bottom:12px" id="monthCompare"></div>
     <h2 style="margin-top:4px">Tren 6 Bulan</h2>
     <div class="card" style="margin-bottom:12px"><div class="chart-box"><canvas id="trendChart"></canvas></div></div>
     <div class="card" id="reportDetail"></div>
@@ -809,6 +860,54 @@ function calcStreak(){
 function weekSums(){const D=864e5,now=Date.now();
   const s=(a,b)=>data.filter(t=>t.type==='out'&&t.ts&&t.ts>=a&&t.ts<b).reduce((x,t)=>x+t.amt,0);
   return {thisW:s(now-7*D,now+1),lastW:s(now-14*D,now-7*D)};}
+function renderGreet(){const el=document.getElementById('greetBar');if(!el)return;
+  const h=new Date().getHours();
+  const g=h<11?'Selamat pagi':h<15?'Selamat siang':h<19?'Selamat sore':'Selamat malam';
+  const ic=h<15?'ti-sun':h<19?'ti-sunset-2':'ti-moon-stars';
+  let nm='';try{nm=localStorage.getItem('sg_lic')||'';}catch(e){}
+  el.innerHTML=`<i class="ti ${ic}"></i> ${g}${nm?', <b>'+nm+'</b>':''} — yuk cek keuanganmu hari ini.`;}
+let _insIdx=0,_insTimer=null,_insList=[];
+function computeInsights(){const out=[];const tx=monthTx();const outs=tx.filter(t=>t.type==='out');
+  if(outs.length){const by={};outs.forEach(t=>by[t.cat]=(by[t.cat]||0)+t.amt);
+    const top=Object.entries(by).sort((a,b)=>b[1]-a[1])[0];const c=catInfo('out',top[0]);
+    out.push({i:'ti-flame',k:'Kategori paling boros bulan ini',v:`${c.n} — ${rp(top[1])}`});}
+  if(outs.length){const big=outs.slice().sort((a,b)=>b.amt-a.amt)[0];const c=catInfo('out',big.cat);
+    out.push({i:'ti-arrow-up-right',k:'Pengeluaran terbesar bulan ini',v:`${big.note||c.n} — ${rp(big.amt)}`});}
+  const wd=[0,0,0,0,0,0,0];const names=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  outs.forEach(t=>{if(t.ts)wd[new Date(t.ts).getDay()]+=t.amt;});
+  if(outs.length){let mi=-1,mv=Infinity;wd.forEach((v,i)=>{if(v>0&&v<mv){mv=v;mi=i;}});
+    if(mi>=0)out.push({i:'ti-mood-smile',k:'Hari paling hemat bulan ini',v:`${names[mi]} — total ${rp(mv)}`});}
+  const tin=tx.filter(t=>t.type==='in').reduce((s,t)=>s+t.amt,0);const tout=outs.reduce((s,t)=>s+t.amt,0);
+  if(tin>0){const rate=Math.round((tin-tout)/tin*100);
+    out.push({i:'ti-pig-money',k:'Sisa dari pemasukan bulan ini',v:`${rate>=0?rate:0}% tersisa (${rp(Math.max(0,tin-tout))})`});}
+  out.push({i:'ti-checklist',k:'Aktivitas bulan ini',v:`${tx.length} transaksi tercatat`});
+  return out;}
+function renderInsight(){const wrap=document.getElementById('insightWrap');if(!wrap)return;
+  _insList=computeInsights();
+  if(!_insList.length){wrap.innerHTML='';if(_insTimer){clearInterval(_insTimer);_insTimer=null;}return;}
+  if(_insIdx>=_insList.length)_insIdx=0;
+  const paint=()=>{const it=_insList[_insIdx];if(!it)return;
+    wrap.innerHTML=`<div class="insight" onclick="cycleInsight()"><div class="ii"><i class="ti ${it.i}"></i></div>
+      <div class="it"><div class="k">${it.k}</div><div class="v">${it.v}</div></div>
+      <div class="dots">${_insList.map((_,i)=>`<span class="${i===_insIdx?'on':''}"></span>`).join('')}</div></div>`;};
+  paint();
+  window.cycleInsight=()=>{_insIdx=(_insIdx+1)%_insList.length;paint();};
+  if(_insTimer)clearInterval(_insTimer);
+  _insTimer=setInterval(()=>{_insIdx=(_insIdx+1)%_insList.length;paint();},5000);}
+function renderMonthCompare(){const el=document.getElementById('monthCompare');if(!el)return;
+  const thisK=mkey(view);const pv=new Date(view.getFullYear(),view.getMonth()-1,1);const lastK=mkey(pv);
+  const sum=(k,ty)=>data.filter(t=>t.month===k&&t.type===ty).reduce((s,t)=>s+t.amt,0);
+  const tI=sum(thisK,'in'),tO=sum(thisK,'out'),lI=sum(lastK,'in'),lO=sum(lastK,'out');
+  const mx=Math.max(tI,tO,lI,lO,1);const h=v=>Math.max(3,Math.round(v/mx*100))+'%';
+  const dpO=lO>0?Math.round((tO-lO)/lO*100):null;
+  const col=dpO===null?'var(--muted)':dpO>0?'var(--red)':'var(--green)';
+  const note=dpO===null?'Belum ada data bulan lalu untuk dibandingkan.':`Pengeluaran ${dpO>0?'naik':dpO<0?'turun':'sama'} <b style="color:${col}">${Math.abs(dpO)}%</b> dari bulan lalu`;
+  el.innerHTML=`<div class="mc-wrap">
+    <div class="mc-col"><div class="mc-bars"><div class="mc-bar in" style="height:${h(lI)}" title="Masuk ${rp(lI)}"></div><div class="mc-bar out" style="height:${h(lO)}" title="Keluar ${rp(lO)}"></div></div><div class="mc-lbl">${MONTHS[pv.getMonth()].slice(0,3)}</div></div>
+    <div class="mc-col"><div class="mc-bars"><div class="mc-bar in" style="height:${h(tI)}" title="Masuk ${rp(tI)}"></div><div class="mc-bar out" style="height:${h(tO)}" title="Keluar ${rp(tO)}"></div></div><div class="mc-lbl">${MONTHS[view.getMonth()].slice(0,3)}</div></div>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px"><span style="color:var(--green)">● Masuk</span><span style="color:var(--red)">● Keluar</span></div>
+  <div class="small" style="text-align:center;margin-top:6px">${note}</div>`;}
 let CATS=L(PK('cats'),'null'); if(!CATS||!CATS.out||!CATS.in)CATS=JSON.parse(JSON.stringify(DEFAULT_CATS));
 const saveCats=()=>localStorage.setItem(PK('cats'),JSON.stringify(CATS));
 let curType='out',curCat='makan',curPhoto='',editId=null,debtKind='utang',_catManual=false;
@@ -832,7 +931,14 @@ const mkey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 const mlabel=d=>MONTHS[d.getMonth()]+' '+d.getFullYear();
 const sym=()=>CUR[(settings&&settings.currency)||'IDR'];
 let hideBal=localStorage.getItem('sg_hidebal')==='1';
-const rp=n=>hideBal?sym()+'•••':sym()+Math.round(n).toLocaleString('id-ID');
+let numShort=localStorage.getItem('sg_numshort')==='1';
+function fmtShort(n){n=Math.round(n);const a=Math.abs(n);const sg=n<0?'-':'';
+  if(a>=1e9)return sg+(a/1e9).toFixed(a>=1e10?0:1).replace('.',',').replace(',0','')+'M';
+  if(a>=1e6)return sg+(a/1e6).toFixed(a>=1e7?0:1).replace('.',',').replace(',0','')+'jt';
+  if(a>=1e3)return sg+(a/1e3).toFixed(a>=1e4?0:1).replace('.',',').replace(',0','')+'rb';
+  return sg+a.toLocaleString('id-ID');}
+const rp=n=>hideBal?sym()+'•••':sym()+(numShort?fmtShort(n):Math.round(n).toLocaleString('id-ID'));
+window.setNumShort=v=>{numShort=v;localStorage.setItem('sg_numshort',v?'1':'0');render();};
 const es=(icon,text)=>`<div class="empty"><div class="ei"><i class="${icon}"></i></div><div>${text}</div></div>`;
 const catIcon=e=>(e&&e.indexOf('ti-')>=0)?`<i class="${e}"></i>`:(e||'🏷️');
 let _lastBalAnim=null,_balRAF=null;
@@ -847,7 +953,7 @@ function animateBalance(el,target){
     const p=Math.min(1,(t-t0)/dur);
     const eased=1-Math.pow(1-p,3);
     const val=start+(target-start)*eased;
-    el.textContent=sym()+Math.round(val).toLocaleString('id-ID');
+    el.textContent=numShort?sym()+fmtShort(val):sym()+Math.round(val).toLocaleString('id-ID');
     if(p<1){_balRAF=requestAnimationFrame(step);}else{el.textContent=rp(target);_balRAF=null;}
   }
   _balRAF=requestAnimationFrame(step);
@@ -858,7 +964,7 @@ function animNum(el,target){ if(!el)return;
   if(start===target){el.textContent=rp(target);return;}
   const t0=performance.now(),dur=500;
   function s(t){const p=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-p,3);
-    el.textContent=sym()+Math.round(start+(target-start)*e).toLocaleString('id-ID');
+    el.textContent=numShort?sym()+fmtShort(start+(target-start)*e):sym()+Math.round(start+(target-start)*e).toLocaleString('id-ID');
     if(p<1)requestAnimationFrame(s);else el.textContent=rp(target);}
   requestAnimationFrame(s);}
 function renderSparkline(){
@@ -998,6 +1104,7 @@ function render(){
     return `<div class="cat"><div class="ico" style="background:${c.c};color:#fff">${catIcon(c.e)}</div>
       <div class="meta"><div class="n">${c.n} ${badge}</div><div class="bar"><i style="width:${pct}%;background:${bud&&v>bud?'var(--red)':c.c}"></i></div></div>
       <div class="amt">${rp(v)}</div></div>`;}).join(''):es('ti ti-chart-bar','Belum ada pengeluaran');
+  renderGreet(); renderInsight(); renderMonthCompare();
   fillFilters(); renderDash(); renderRecent(); renderTxAll(); renderWallets(); renderGoals(); renderDebts(); renderRecur(); renderCats();
   renderReport(sorted,tout); renderTrend(); renderAdvice(tin,tout,byCat);
 }
@@ -1053,8 +1160,9 @@ function renderTrend(){const ctx=document.getElementById('trendChart');if(!ctx)r
     options:{plugins:{legend:{labels:{color:'#8a93a8',boxWidth:12,font:{size:12}}}},
       scales:{x:{ticks:{color:'#8a93a8'},grid:{display:false}},y:{ticks:{color:'#8a93a8',callback:v=>v>=1e6?(v/1e6)+'jt':v>=1e3?(v/1e3)+'rb':v},grid:{color:'#272d3d'}}}}});
 }
-function titemHTML(rowHtml,detailHtml,dim){
-  return `<div class="titem"${dim?' style="opacity:.6"':''}><div class="row" onclick="toggleDetail(this)">${rowHtml}<span class="chev">›</span></div>
+function titemHTML(rowHtml,detailHtml,dim,swid){
+  const hints=swid?'<span class="sw-hint sw-edit"><i class="ti ti-edit"></i></span><span class="sw-hint sw-del"><i class="ti ti-trash"></i></span>':'';
+  return `<div class="titem"${swid?` data-swid="${swid}"`:''}${dim?' style="opacity:.6"':''}>${hints}<div class="row" onclick="toggleDetail(this)">${rowHtml}<span class="chev">›</span></div>
     <div class="tdetail"><div class="tdetail-in">${detailHtml}</div></div></div>`;}
 function dline(l,v){return `<div class="dline"><span class="dl">${l}</span><span class="dv">${v}</span></div>`;}
 function dnote(l,v){return `<div class="dnote"><span class="dl">${l}</span><div class="dv">${v}</div></div>`;}
@@ -1066,7 +1174,7 @@ function txRowHTML(t,withAcc){
     <div class="amt ${inn?'in':'out'}">${inn?'+':'−'}${rp(t.amt)}</div>`;
     const det=dline('Dompet',accName(t.acc))+dline('Jenis',lbl)+dline('Waktu',tlabel(t))+
       `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
-    return titemHTML(row,det);}
+    return titemHTML(row,det,false,t.id);}
   if(t.type==='tf'){
     const row=`<div class="ico" style="background:#60a5fa;color:#fff"><i class="ti ti-arrows-exchange"></i></div>
     <div class="meta"><div class="n">Transfer</div><div class="d">${accName(t.from)} → ${accName(t.to)} · ${tlabel(t)}${t.fee?' · admin '+rp(t.fee):''}</div></div>
@@ -1074,21 +1182,21 @@ function txRowHTML(t,withAcc){
     const det=dline('Dari',accName(t.from))+dline('Ke',accName(t.to))+(t.fee?dline('Biaya admin',rp(t.fee)):'')+dline('Waktu',tlabel(t))+
       `<div class="dbtns"><button class="dbtn edit" onclick="event.stopPropagation();editTransfer(${t.id})"><i class="ti ti-edit"></i> Ubah</button>
       <button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
-    return titemHTML(row,det);}
+    return titemHTML(row,det,false,t.id);}
   if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);
     const row=`<div class="ico" style="background:#4ade80;color:#fff"><i class="ti ti-arrow-back-up"></i></div>
     <div class="meta"><div class="n">Tarik tabungan${g?': '+g.name:''}</div><div class="d">ke ${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt in">+${rp(t.amt)}</div>`;
     const det=dline('Dari target',g?g.name:'-')+dline('Ke dompet',accName(t.acc))+dline('Waktu',tlabel(t))+
       `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
-    return titemHTML(row,det);}
+    return titemHTML(row,det,false,t.id);}
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);
     const row=`<div class="ico" style="background:#e6c068;color:#1a1408"><i class="ti ti-pig-money"></i></div>
     <div class="meta"><div class="n">Nabung${g?': '+g.name:''}</div><div class="d">dari ${accName(t.acc)} · ${tlabel(t)}</div></div>
     <div class="amt out">−${rp(t.amt)}</div>`;
     const det=dline('Dari dompet',accName(t.acc))+dline('Ke target',g?g.name:'-')+dline('Waktu',tlabel(t))+
       `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
-    return titemHTML(row,det);}
+    return titemHTML(row,det,false,t.id);}
   const c=catInfo(t.type,t.cat);
   const row=`<div class="ico" style="background:${c.c};color:#fff">${catIcon(c.e)}</div>
     ${t.photo?`<img class="thumb" src="${t.photo}">`:''}
@@ -1099,7 +1207,7 @@ function txRowHTML(t,withAcc){
     `<div class="dbtns"><button class="dbtn" onclick="event.stopPropagation();dupTx(${t.id})"><i class="ti ti-copy"></i> Catat Ulang</button>
     <button class="dbtn edit" onclick="event.stopPropagation();editTx(${t.id})"><i class="ti ti-edit"></i> Ubah</button>
     <button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
-  return titemHTML(row,det);}
+  return titemHTML(row,det,false,t.id);}
 function renderRecent(){const tx=monthTx().sort((a,b)=>(b.ts||b.id)-(a.ts||a.id)).slice(0,8);
   document.getElementById('recentList').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):es('ti ti-receipt-2','Belum ada transaksi.');}
 function renderTxAll(){
@@ -1120,8 +1228,17 @@ function renderTxAll(){
     return hay.includes(q)||(qd&&String(t.amt).includes(qd));});}
   const S={new:(a,b)=>(b.ts||b.id)-(a.ts||a.id),old:(a,b)=>(a.ts||a.id)-(b.ts||b.id),hi:(a,b)=>b.amt-a.amt,lo:(a,b)=>a.amt-b.amt};
   tx=tx.slice().sort(S[fs]||S.new);
-  document.getElementById('txAll').innerHTML=tx.length?tx.map(t=>txRowHTML(t,true)).join(''):es('ti ti-search','Tidak ada transaksi yang cocok.');
+  let html;
+  if(!tx.length)html=es('ti ti-search','Tidak ada transaksi yang cocok.');
+  else if(fs==='new'||fs==='old'){let last=null;html='';
+    tx.forEach(t=>{const lab=dayLabel(t.ts||t.id);if(lab!==last){html+=`<div class="date-sep">${lab}</div>`;last=lab;}html+=txRowHTML(t,true);});}
+  else html=tx.map(t=>txRowHTML(t,true)).join('');
+  document.getElementById('txAll').innerHTML=html;
 }
+function dayLabel(ts){const d=new Date(ts);d.setHours(0,0,0,0);const today=new Date();today.setHours(0,0,0,0);
+  const diff=Math.round((today-d)/864e5);
+  if(diff===0)return 'Hari ini';if(diff===1)return 'Kemarin';if(diff>1&&diff<7)return diff+' hari lalu';
+  return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)+' '+d.getFullYear();}
 function renderWallets(){
   document.getElementById('walletList').innerHTML=accounts.map(a=>{
     const row=`${walletIcon(a)}
@@ -1250,6 +1367,13 @@ function showOnboarding(cb){
 }
 // ---------- HAPTIC (Android only, no-op di iOS/desktop) ----------
 function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||10); }catch(e){} }
+function showSaved(){ try{
+  const p=document.createElement('div');p.className='saved-pop';
+  p.innerHTML='<div class="chk"><i class="ti ti-check"></i></div>';
+  document.body.appendChild(p);haptic(12);
+  setTimeout(()=>p.classList.add('out'),620);
+  setTimeout(()=>p.remove(),950);
+}catch(e){} }
 document.addEventListener('click',e=>{
   const t=e.target.closest('.save-btn,.dbtn.del,.dbtn.edit,.wa-btn');
   if(t) haptic(t.classList.contains('del')?16:10);
@@ -1271,6 +1395,30 @@ document.addEventListener('pointerdown',e=>{
 (function(){const h=document.querySelector('header');if(!h)return;
   const on=()=>h.classList.toggle('scrolled',window.scrollY>4);
   window.addEventListener('scroll',on,{passive:true});on();})();
+// ---------- SWIPE TO ACTION (mobile) ----------
+window.swipeEdit=id=>{const t=data.find(x=>x.id===id);if(!t)return;
+  if(t.type==='tf')editTransfer(id);else if(t.type==='in'||t.type==='out')editTx(id);
+  else{const r=document.querySelector('.titem[data-swid="'+id+'"] > .row');if(r)toggleDetail(r);}};
+(function(){let el=null,row=null,sx=0,sy=0,dir=0,dx=0;
+  document.addEventListener('touchstart',e=>{
+    if(window.innerWidth>=1000)return;
+    const it=e.target.closest('.titem[data-swid]');if(!it)return;
+    if(document.querySelector('.overlay.show'))return;
+    el=it;row=it.querySelector(':scope > .row');sx=e.touches[0].clientX;sy=e.touches[0].clientY;dir=0;dx=0;
+    it.classList.remove('sw-anim');},{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!el)return;const cx=e.touches[0].clientX,cy=e.touches[0].clientY,ddx=cx-sx,ddy=cy-sy;
+    if(dir===0){if(Math.abs(ddx)>8||Math.abs(ddy)>8){dir=Math.abs(ddx)>Math.abs(ddy)+2?1:-1;if(dir!==1){el=null;return;}}else return;}
+    if(dir===1){if(e.cancelable)e.preventDefault();dx=Math.max(-104,Math.min(104,ddx));
+      row.style.transform='translateX('+dx+'px)';row.style.background='var(--card)';}},{passive:false});
+  function end(){if(!el){return;}const it=el,r=row,d=dx,id=Number(it.dataset.swid);
+    it.classList.add('sw-anim');
+    if(d<=-72){r.style.transform='translateX(-100%)';setTimeout(()=>delTx(id),150);}
+    else if(d>=72){r.style.transform='';r.style.background='';setTimeout(()=>swipeEdit(id),110);}
+    else{r.style.transform='';r.style.background='';}
+    el=null;row=null;dir=0;dx=0;}
+  document.addEventListener('touchend',end,{passive:true});
+  document.addEventListener('touchcancel',end,{passive:true});})();
 // ---------- PULL TO REFRESH ----------
 async function pullToRefreshAction(){
   render();
@@ -1455,7 +1603,8 @@ function renderProfil(){ const b=document.getElementById('profilBody'); if(!b)re
     +'<div class="card" style="margin-bottom:14px"><div class="dash-t">Tampilan</div>'
     +'<label class="small">Tema</label><div class="seg" id="profTheme"><button data-th="dark"><i class="ti ti-moon"></i> Gelap</button><button data-th="midnight"><i class="ti ti-moon-stars"></i> Midnight</button><button data-th="light"><i class="ti ti-sun"></i> Terang</button></div>'
     +'<label class="small" style="margin-top:10px;display:block">Warna aksen</label><div class="accent-row" id="profAccent"></div>'
-    +'<label class="small" style="margin-top:10px;display:block">Kerapatan tampilan</label><div class="seg" id="profDensity"><button data-d="comfort"><i class="ti ti-line-height"></i> Nyaman</button><button data-d="compact"><i class="ti ti-baseline-density-medium"></i> Kompak</button></div></div>'
+    +'<label class="small" style="margin-top:10px;display:block">Kerapatan tampilan</label><div class="seg" id="profDensity"><button data-d="comfort"><i class="ti ti-line-height"></i> Nyaman</button><button data-d="compact"><i class="ti ti-baseline-density-medium"></i> Kompak</button></div>'
+    +'<label class="small" style="margin-top:10px;display:block">Format angka</label><div class="seg" id="profNumFmt"><button data-nf="full"><i class="ti ti-numbers"></i> Penuh (1.200.000)</button><button data-nf="short"><i class="ti ti-arrows-minimize"></i> Ringkas (1,2jt)</button></div></div>'
     +'<button class="ghost-btn" onclick="openSettings()"><i class="ti ti-settings"></i> Buka Pengaturan lengkap</button>';
   const pt=document.getElementById('profTheme');
   pt.querySelector('[data-th="dark"]').className=theme==='dark'?'active':''; pt.querySelector('[data-th="light"]').className=theme==='light'?'active':''; pt.querySelector('[data-th="midnight"]').className=theme==='midnight'?'active':'';
@@ -1466,6 +1615,9 @@ function renderProfil(){ const b=document.getElementById('profilBody'); if(!b)re
   const pd=document.getElementById('profDensity');
   if(pd){pd.querySelector('[data-d="comfort"]').className=density!=='compact'?'active':'';pd.querySelector('[data-d="compact"]').className=density==='compact'?'active':'';
     pd.querySelectorAll('button').forEach(x=>x.onclick=()=>{ setDensity(x.dataset.d); renderProfil(); });}
+  const pnf=document.getElementById('profNumFmt');
+  if(pnf){pnf.querySelector('[data-nf="full"]').className=numShort?'':'active';pnf.querySelector('[data-nf="short"]').className=numShort?'active':'';
+    pnf.querySelectorAll('button').forEach(x=>x.onclick=()=>{ setNumShort(x.dataset.nf==='short'); renderProfil(); });}
 }
 document.getElementById('prevMonth').onclick=()=>{view.setMonth(view.getMonth()-1);render();};
 document.getElementById('nextMonth').onclick=()=>{view.setMonth(view.getMonth()+1);render();};
@@ -1538,6 +1690,30 @@ document.getElementById('fab').onclick=()=>{
   resetCalc();document.getElementById('calcRow').classList.remove('show');
   _catManual=false;
   fillAccSelect(document.getElementById('accInput'));setType('out');renderFavs();ovTx.classList.add('show');};
+// long-press FAB -> catat cepat favorit
+(function(){function bind(btn){if(!btn)return;let timer=null,fired=false;
+  const start=()=>{fired=false;timer=setTimeout(()=>{if(document.querySelector('.overlay.show'))return;fired=true;haptic(18);quickFavMenu();},480);};
+  const cancel=()=>clearTimeout(timer);
+  btn.addEventListener('touchstart',start,{passive:true});btn.addEventListener('touchend',cancel,{passive:true});btn.addEventListener('touchmove',cancel,{passive:true});
+  btn.addEventListener('mousedown',start);btn.addEventListener('mouseup',cancel);btn.addEventListener('mouseleave',cancel);
+  btn.addEventListener('click',e=>{if(fired){e.preventDefault();e.stopImmediatePropagation();fired=false;}},true);}
+  bind(document.getElementById('fab'));bind(document.getElementById('bnFab'));})();
+window.quickFavMenu=()=>{
+  if(!favs.length){document.getElementById('fab').click();return;}
+  const list=favs.map((f,i)=>{const c=catInfo(f.type,f.cat);
+    return `<button class="dbtn" style="justify-content:flex-start;gap:10px;margin:0 0 8px;flex:1 1 100%" onclick="quickAddFav(${i})">
+      <span style="width:30px;height:30px;border-radius:9px;background:${c.c};color:#fff;display:grid;place-items:center;flex-shrink:0">${catIcon(c.e)}</span>
+      <span style="flex:1;text-align:left">${f.note||c.n}</span><b style="color:${f.type==='in'?'var(--green)':'var(--red)'}">${f.type==='in'?'+':'−'}${rp(f.amt)}</b></button>`;}).join('');
+  openGen(`<h3><i class="ti ti-bolt"></i> Catat Cepat</h3>
+    <div class="small" style="margin-bottom:12px;text-align:center">Sekali tap langsung tercatat pakai favoritmu.</div>
+    <div style="display:flex;flex-direction:column">${list}</div>
+    <button class="ghost-btn" onclick="ovGen.classList.remove('show');document.getElementById('fab').click()">Catat manual…</button>`);};
+window.quickAddFav=i=>{const f=favs[i];if(!f)return;
+  const acc=(f.acc&&accounts.some(a=>a.id===f.acc))?f.acc:(accounts[0]&&accounts[0].id);
+  const d=new Date();
+  data.push({id:Date.now(),type:f.type,cat:f.cat,amt:f.amt,note:f.note||'',acc,tags:f.tags||[],photo:'',
+    date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
+  saveTx();ovGen.classList.remove('show');render();showSaved();};
 function editTx(id){const t=data.find(x=>x.id===id);if(!t)return;
   editId=id;document.getElementById('txTitle').textContent='Edit Transaksi';document.getElementById('saveBtn').textContent='Simpan Perubahan';
   _catManual=true;
@@ -1564,7 +1740,7 @@ document.getElementById('saveBtn').onclick=()=>{
     date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)};
   if(editing){if(old)Object.assign(old,fields);editId=null;}
   else data.push({id:Date.now(),...fields});
-  saveTx();ovTx.classList.remove('show');render();};
+  saveTx();ovTx.classList.remove('show');render();if(!editing)showSaved();};
 // ---------- FAVORIT / TEMPLATE ----------
 function renderFavs(){const row=document.getElementById('favRow');if(!row)return;
   row.innerHTML=favs.map((f,i)=>`<span class="fav-chip" data-i="${i}">${f.note||catInfo(f.type,f.cat).n} · ${rp(f.amt)}<span class="fx" data-del="${i}">✕</span></span>`).join('');
@@ -1600,7 +1776,17 @@ document.getElementById('remOff').onclick=()=>{document.getElementById('remOff')
 document.getElementById('rollOn').onclick=()=>{document.getElementById('rollOn').classList.add('active');document.getElementById('rollOff').classList.remove('active');};
 document.getElementById('rollOff').onclick=()=>{document.getElementById('rollOff').classList.add('active');document.getElementById('rollOn').classList.remove('active');};
 function markTheme(){document.getElementById('themeDark').className=theme==='dark'?'active':'';document.getElementById('themeLight').className=theme==='light'?'active':'';document.getElementById('themeMidnight').className=theme==='midnight'?'active':'';}
-function setTheme(t){theme=t;localStorage.setItem('sg_theme',t);applyTheme(t);markTheme();}
+function setTheme(t){
+  const apply=()=>{theme=t;localStorage.setItem('sg_theme',t);applyTheme(t);markTheme();};
+  const ev=window.event;
+  if(document.startViewTransition&&!window.matchMedia('(prefers-reduced-motion:reduce)').matches){
+    const x=(ev&&ev.clientX!=null)?ev.clientX:window.innerWidth/2;
+    const y=(ev&&ev.clientY!=null)?ev.clientY:0;
+    document.documentElement.style.setProperty('--rx',x+'px');
+    document.documentElement.style.setProperty('--ry',y+'px');
+    try{document.startViewTransition(apply);}catch(e){apply();}
+  }else apply();
+}
 document.getElementById('themeDark').onclick=()=>setTheme('dark');
 document.getElementById('themeLight').onclick=()=>setTheme('light');
 document.getElementById('themeMidnight').onclick=()=>setTheme('midnight');
@@ -1733,6 +1919,7 @@ function renderCats(){
    <div class="card" style="margin-top:12px">
      <label>Tambah kategori baru — ${t==='out'?'Pengeluaran':'Pemasukan'}</label>
      <div class="grid2"><input id="ctEmoji" maxlength="2" value="🏷️" style="text-align:center;font-size:20px"><input id="ctName" placeholder="Nama kategori"></div>
+     <label>Warna</label><div class="color-row" id="ctColorRow"></div>
      <button class="save-btn" onclick="addCatTab('${t}')">+ Tambah Kategori</button>
      <div class="small" style="margin-top:8px">Tips: ketik/tempel 1 emoji di kotak kiri sebagai ikon.</div></div>`;
   body.querySelectorAll('.budgetInp').forEach(inp=>{
@@ -1742,11 +1929,16 @@ function renderCats(){
       if(v)settings.budgets[inp.dataset.k]=v;else delete settings.budgets[inp.dataset.k];
       saveAll();render();};
   });
+  const cr=document.getElementById('ctColorRow');
+  if(cr){if(!ctColor)ctColor=CAT_COLORS[0];
+    cr.innerHTML=CAT_COLORS.map(c=>`<button type="button" data-c="${c}" class="${c===ctColor?'sel':''}" style="background:${c}"></button>`).join('');
+    cr.querySelectorAll('button').forEach(b=>b.onclick=()=>{ctColor=b.dataset.c;cr.querySelectorAll('button').forEach(x=>x.classList.toggle('sel',x===b));});}
 }
+let ctColor='';
 window.setCatTab=t=>{catTabType=t;renderCats();};
 window.addCatTab=t=>{const n=document.getElementById('ctName').value.trim();if(!n)return;
   const e=(document.getElementById('ctEmoji').value||'').trim()||'🏷️';
-  const item={k:'c'+Date.now(),n,e,c:CAT_COLORS[CATS[t].length%CAT_COLORS.length]};
+  const item={k:'c'+Date.now(),n,e,c:ctColor||CAT_COLORS[CATS[t].length%CAT_COLORS.length]};
   const idx=CATS[t].findIndex(x=>x.k==='lain');if(idx>=0)CATS[t].splice(idx,0,item);else CATS[t].push(item);
   saveCats();fillFilters();render();};
 window.renameCat=(type,k)=>{const c=CATS[type].find(x=>x.k===k);const v=prompt('Nama kategori:',c.n);if(v&&v.trim()){c.n=v.trim();saveCats();fillFilters();render();}};
