@@ -421,6 +421,11 @@
   .mc-bar{width:24px;border-radius:6px 6px 0 0;min-height:3px;transition:height .5s cubic-bezier(.4,0,.2,1)}
   .mc-bar.in{background:var(--green)} .mc-bar.out{background:var(--red)}
   .mc-lbl{font-size:11.5px;color:var(--muted);font-weight:600}
+  /* offline bar */
+  #offlineBar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:120;background:#334155;color:#fff;
+    font-size:12.5px;font-weight:600;text-align:center;padding:9px 14px calc(9px + env(safe-area-inset-bottom))}
+  #offlineBar.show{display:block}
+  html.light #offlineBar{background:#475569}
   /* circular theme reveal (View Transitions) */
   ::view-transition-old(root){animation:none}
   ::view-transition-new(root){animation:vtReveal .45s ease}
@@ -451,6 +456,7 @@
   <button class="save-btn" id="onbNext" style="max-width:320px;margin:18px auto 0">Lanjut</button>
 </div>
 <div class="ptr" id="ptr"><i class="ti ti-refresh"></i></div>
+<div id="offlineBar"><i class="ti ti-wifi-off"></i> Kamu sedang offline — catatan tetap tersimpan & otomatis sinkron saat online.</div>
 <div id="bootSplash" class="boot-splash">
   <div class="boot-card"><div class="sk sk-label"></div><div class="sk sk-amount"></div></div>
   <div class="boot-row"><div class="sk sk-ico"></div><div class="boot-meta"><div class="sk sk-line1"></div><div class="sk sk-line2"></div></div><div class="sk sk-amt"></div></div>
@@ -752,7 +758,13 @@
     </div>
     <button class="ghost-btn" id="impBtn">⬆ Pulihkan dari backup</button>
     <input type="file" id="impFile" accept="application/json" class="hidden">
-    <button class="save-btn" id="setSave">Simpan Pengaturan</button>
+    <button class="ghost-btn" id="sampleBtn" style="margin-top:8px"><i class="ti ti-flask"></i> Isi data contoh (demo)</button>
+    <label style="margin-top:14px">Bantuan & Info</label>
+    <div class="grid2">
+      <button class="ghost-btn" id="helpBtn" style="margin:0"><i class="ti ti-help-circle"></i> Pusat Bantuan</button>
+      <button class="ghost-btn" id="whatsNewBtn" style="margin:0"><i class="ti ti-sparkles"></i> Apa yang baru</button>
+    </div>
+    <button class="save-btn" id="setSave" style="margin-top:12px">Simpan Pengaturan</button>
   </div>
 </div>
 
@@ -1596,16 +1608,19 @@ function updateSideExtra(){ const st=document.getElementById('sideTheme'); if(st
 document.getElementById('sideTheme').onclick=()=>{ setTheme(THEME_CYCLE[theme]||'dark'); updateSideExtra(); };
 document.getElementById('sideLogout').onclick=()=>{ if(currentUser) acctLogout(); else openAcct(); };
 function renderProfil(){ const b=document.getElementById('profilBody'); if(!b)return;
+  let lic='';try{lic=localStorage.getItem('sg_lic')||'';}catch(e){}
+  const statusLine='<div class="small" style="margin-bottom:10px">'+syncStatusText()+'</div>';
   const acc = !sb ? '<div class="small" style="margin-bottom:6px">Login butuh koneksi internet.</div>'
-    : currentUser ? '<div class="small" style="margin-bottom:10px">Masuk sebagai <b style="color:var(--gold)">'+currentUser.email+'</b> · tersinkron ✓</div><div class="grid2"><button class="ghost-btn" style="margin:0" onclick="acctPull()"><i class="ti ti-download"></i> Tarik data terbaru</button><button class="ghost-btn" style="margin:0" onclick="acctLogout()">Keluar</button></div>'
-    : '<div class="small" style="margin-bottom:10px">Login untuk menyimpan & sinkron data di semua perangkat.</div><button class="ghost-btn" onclick="openAcct()">Masuk / Daftar</button>';
+    : currentUser ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1a1408;display:grid;place-items:center;font-weight:800;flex-shrink:0">'+(currentUser.email[0]||'').toUpperCase()+'</span><div style="min-width:0"><div style="font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis">'+currentUser.email+'</div><div class="small"><span class="badge ok">Aktif</span> '+(lic?'· lisensi: '+lic:'')+'</div></div></div>'+statusLine+'<div class="grid2"><button class="ghost-btn" style="margin:0" onclick="acctPull()"><i class="ti ti-download"></i> Tarik data terbaru</button><button class="ghost-btn" style="margin:0" onclick="acctLogout()">Keluar</button></div>'
+    : '<div class="small" style="margin-bottom:10px">Login untuk menyimpan & sinkron data di semua perangkat.</div>'+statusLine+'<button class="ghost-btn" onclick="openAcct()">Masuk / Daftar</button>';
   b.innerHTML='<div class="card" style="margin-bottom:14px"><div class="dash-t"><i class="ti ti-cloud"></i> Akun</div>'+acc+'</div>'
     +'<div class="card" style="margin-bottom:14px"><div class="dash-t">Tampilan</div>'
     +'<label class="small">Tema</label><div class="seg" id="profTheme"><button data-th="dark"><i class="ti ti-moon"></i> Gelap</button><button data-th="midnight"><i class="ti ti-moon-stars"></i> Midnight</button><button data-th="light"><i class="ti ti-sun"></i> Terang</button></div>'
     +'<label class="small" style="margin-top:10px;display:block">Warna aksen</label><div class="accent-row" id="profAccent"></div>'
     +'<label class="small" style="margin-top:10px;display:block">Kerapatan tampilan</label><div class="seg" id="profDensity"><button data-d="comfort"><i class="ti ti-line-height"></i> Nyaman</button><button data-d="compact"><i class="ti ti-baseline-density-medium"></i> Kompak</button></div>'
     +'<label class="small" style="margin-top:10px;display:block">Format angka</label><div class="seg" id="profNumFmt"><button data-nf="full"><i class="ti ti-numbers"></i> Penuh (1.200.000)</button><button data-nf="short"><i class="ti ti-arrows-minimize"></i> Ringkas (1,2jt)</button></div></div>'
-    +'<button class="ghost-btn" onclick="openSettings()"><i class="ti ti-settings"></i> Buka Pengaturan lengkap</button>';
+    +'<button class="ghost-btn" onclick="openSettings()"><i class="ti ti-settings"></i> Buka Pengaturan lengkap</button>'
+    +'<div class="grid2" style="margin-top:8px"><button class="ghost-btn" style="margin:0" onclick="openHelp()"><i class="ti ti-help-circle"></i> Bantuan</button><button class="ghost-btn" style="margin:0" onclick="showWhatsNew(true)"><i class="ti ti-sparkles"></i> Apa yang baru</button></div>';
   const pt=document.getElementById('profTheme');
   pt.querySelector('[data-th="dark"]').className=theme==='dark'?'active':''; pt.querySelector('[data-th="light"]').className=theme==='light'?'active':''; pt.querySelector('[data-th="midnight"]').className=theme==='midnight'?'active':'';
   pt.querySelectorAll('button').forEach(x=>x.onclick=()=>{ setTheme(x.dataset.th); updateSideExtra(); renderProfil(); });
@@ -1846,6 +1861,61 @@ document.getElementById('impFile').onchange=e=>{const f=e.target.files[0];if(!f)
     if(o.cats&&o.cats.out&&o.cats.in){CATS=o.cats;saveCats();}
     if(Array.isArray(o.fav)){favs=o.fav;saveFavs();}
     saveAll();alert('Data berhasil dipulihkan!');ovSet.classList.remove('show');render();}catch{alert('File tidak valid.');}};r.readAsText(f);};
+// ---------- BANTUAN / WA CS ----------
+const WA_CS='6285171567692';
+window.openHelp=()=>{try{ovSet.classList.remove('show');}catch(e){}
+  const faq=[
+    ['Bagaimana cara mencatat transaksi?','Tekan tombol + di bawah, isi nominal, pilih kategori (bisa otomatis dari catatan), lalu Simpan. Tahan tombol + untuk catat cepat dari favorit.'],
+    ['Apakah data saya aman & tersimpan?','Data tersimpan di perangkatmu dan otomatis tersinkron ke akunmu (cloud) saat online. Kamu juga bisa Backup manual (JSON) di Pengaturan.'],
+    ['Ganti HP, apakah data ikut pindah?','Ya. Login dengan akun yang sama di HP baru, data otomatis tertarik dari cloud. Atau pakai Backup → Pulihkan.'],
+    ['Kenapa saya tidak bisa login?','Pastikan email yang dipakai adalah email pembeli yang sudah diaktivasi. Kalau masih gagal, hubungi admin lewat WhatsApp.'],
+    ['Bagaimana atur budget & pengingat?','Buka Pengaturan untuk atur gaji, budget per kategori, dan pengingat harian. Peringatan otomatis muncul di Beranda.']
+  ];
+  openGen(`<h3><i class="ti ti-help-circle"></i> Pusat Bantuan</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+    ${faq.map(([q,a])=>`<div class="card" style="padding:0"><div class="titem"><div class="row" onclick="toggleDetail(this)" style="padding:12px 12px"><div class="meta"><div class="n">${q}</div></div><span class="chev">›</span></div><div class="tdetail"><div class="tdetail-in"><div class="small" style="line-height:1.5">${a}</div></div></div></div></div>`).join('')}
+    </div>
+    <a class="wa-btn" style="display:block;text-align:center;text-decoration:none" href="https://wa.me/${WA_CS}?text=${encodeURIComponent('Halo admin SanguKu, saya butuh bantuan.')}" target="_blank"><i class="ti ti-brand-whatsapp"></i> Chat Admin (WhatsApp)</a>`);};
+document.getElementById('helpBtn').onclick=openHelp;
+// ---------- DATA CONTOH (DEMO) ----------
+window.loadSample=()=>{
+  const hasData=data.length||goals.length||debts.length;
+  if(hasData&&!confirm('Ini akan MENGGANTI data yang ada dengan data contoh. Lanjutkan?'))return;
+  const A1=Date.now(),A2=A1+1,A3=A1+2;
+  accounts=[{id:A1,name:'Tunai',type:'cash',start:200000},{id:A2,name:'BCA',type:'bank',brand:'bca',start:3500000},{id:A3,name:'GoPay',type:'ewallet',brand:'gopay',start:150000}];
+  const D=864e5,nowt=Date.now();const mk=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+pad2(d.getMonth()+1);};
+  const mkTx=(off,type,cat,amt,note,acc)=>{const ts=nowt-off*D+36e5;const d=new Date(ts);
+    return {id:ts+Math.floor(Math.random()*999),type,cat,amt,note,acc,tags:[],photo:'',date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts,month:mk(ts)};};
+  data=[mkTx(0,'out','makan',35000,'Makan siang',A1),mkTx(0,'out','kopi',22000,'Kopi pagi',A3),
+    mkTx(1,'out','transport',20000,'Bensin',A1),mkTx(1,'out','belanja',120000,'Belanja bulanan',A2),
+    mkTx(2,'in','gaji',5000000,'Gaji bulanan',A2),mkTx(2,'out','tagihan',150000,'Listrik',A2),
+    mkTx(3,'out','makan',48000,'Makan malam',A3),mkTx(4,'out','hiburan',55000,'Nonton',A2),
+    mkTx(5,'out','sehat',75000,'Vitamin',A1),mkTx(6,'out','makan',30000,'Sarapan',A1)];
+  goals=[{id:A1+10,name:'Dana Darurat',target:10000000,saved:2500000},{id:A1+11,name:'Liburan',target:5000000,saved:800000}];
+  debts=[{id:A1+20,kind:'utang',person:'Budi',amt:300000,note:'Pinjam bensin',due:'',paid:false},{id:A1+21,kind:'piutang',person:'Sari',amt:150000,note:'Talangin makan',due:'',paid:false}];
+  recurring=[{id:A1+30,type:'out',cat:'tagihan',amt:150000,acc:A2,day:5,note:'Listrik'}];
+  if(!settings)settings={};settings.gaji=5000000;
+  saveAll();try{ovSet.classList.remove('show');}catch(e){}render();alert('Data contoh dimuat! Kamu bisa hapus & mulai dari nol kapan saja lewat Backup/Pulihkan.');};
+document.getElementById('sampleBtn').onclick=loadSample;
+// ---------- APA YANG BARU ----------
+const APP_VER='2026.08';
+const CHANGELOG=[
+  '🎯 Kalkulator HPP & Harga Jual (tab baru)',
+  '💸 Ambil/tarik tabungan (ke dompet atau tanpa dompet) + bagikan progres ke WA',
+  '🏷️ Kategori otomatis dari catatan + budget per kategori + pilih warna',
+  '📊 Ringkasan mingguan, banding bulan ini vs lalu, kartu insight',
+  '✨ Swipe transaksi, catat cepat (tahan tombol +), sapaan waktu, angka ringkas',
+  '🔔 Pengingat harian, backup & pulihkan data, mode kompak'
+];
+window.showWhatsNew=(manual)=>{
+  if(!manual&&localStorage.getItem('sg_seen_ver')===APP_VER)return;
+  localStorage.setItem('sg_seen_ver',APP_VER);
+  openGen(`<h3><i class="ti ti-sparkles"></i> Apa yang baru</h3>
+    <div class="small" style="text-align:center;margin-bottom:12px">Versi ${APP_VER}</div>
+    <div class="card"><div style="display:flex;flex-direction:column;gap:10px">
+    ${CHANGELOG.map(c=>`<div style="font-size:13.5px;line-height:1.4">${c}</div>`).join('')}</div></div>
+    <button class="save-btn" onclick="ovGen.classList.remove('show')" style="margin-top:12px">Oke, mengerti</button>`);};
+document.getElementById('whatsNewBtn').onclick=()=>{try{ovSet.classList.remove('show');}catch(e){}showWhatsNew(true);};
 
 // ---------- GENERIC ADD SHEETS ----------
 const ovGen=document.getElementById('ovGen');
@@ -2165,6 +2235,16 @@ async function acctPull(){ if(!sb||!currentUser) return;
   let row=null; try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
   if(row && row.data){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_at',row.updated_at||''); location.reload(); }
   else alert('Belum ada data di cloud.'); }
+function updateSyncBadge(){const b=document.getElementById('offlineBar');if(b)b.classList.toggle('show',!navigator.onLine);
+  try{renderProfil();}catch(e){}}
+function syncStatusText(){
+  if(!navigator.onLine)return '<span style="color:var(--muted)"><i class="ti ti-wifi-off"></i> Offline — tersimpan lokal</span>';
+  if(!currentUser)return '';
+  const at=localStorage.getItem('sg_synced_at');
+  if(!at)return '<span style="color:var(--green)"><i class="ti ti-cloud-check"></i> Tersinkron ✓</span>';
+  const d=new Date(at);const t=pad2(d.getHours())+':'+pad2(d.getMinutes());
+  const sameDay=d.toDateString()===new Date().toDateString();
+  return '<span style="color:var(--green)"><i class="ti ti-cloud-check"></i> Tersinkron ✓ · '+(sameDay?'hari ini '+t:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)+' '+t)+'</span>';}
 function renderAccount(){
   const initial=((currentUser&&currentUser.email)?currentUser.email[0]:'').toUpperCase();
   const nav=document.getElementById('acctNav');
@@ -2212,6 +2292,9 @@ if(sb){
 fillFilters();applyRecurring();render();dailyNotif();updateSideExtra();
 try{ const _h=(location.hash||'').slice(1); if(TABS.indexOf(_h)>=0 && _h!=='home') showTab(_h); }catch(e){}
 if(!settings){ if(!localStorage.getItem('sg_onboarded')) showOnboarding(openSettings); else openSettings(); }
+else if(localStorage.getItem('sg_seen_ver')!==APP_VER){ setTimeout(()=>showWhatsNew(false),700); }
+updateSyncBadge();
+window.addEventListener('online',updateSyncBadge);window.addEventListener('offline',updateSyncBadge);
 requestAnimationFrame(()=>{const bs=document.getElementById('bootSplash');if(bs){bs.classList.add('hide');setTimeout(()=>bs.remove(),400);}updateBnPill();});
 // PWA service worker (only works when hosted)
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});

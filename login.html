@@ -46,10 +46,19 @@
     <input id="email" type="email" placeholder="kamu@email.com" required autocomplete="email">
     <label>Password</label>
     <input id="pass" type="password" placeholder="Password" required autocomplete="current-password">
+    <div style="text-align:right;margin-bottom:4px"><a href="#" id="forgotLink" style="color:var(--gold);font-size:12.5px;font-weight:600">Lupa password?</a></div>
     <button class="btn" type="submit" id="btn">Masuk</button>
     <div class="msg" id="msg"></div>
   </form>
+  <form id="resetForm" style="display:none" onsubmit="return doReset(event)">
+    <div class="sub" style="margin-bottom:14px">Buat password baru untuk akunmu.</div>
+    <label>Password baru</label>
+    <input id="newPass" type="password" placeholder="Min. 6 karakter" required autocomplete="new-password">
+    <button class="btn" type="submit" id="resetBtn">Simpan Password Baru</button>
+    <div class="msg" id="rmsg"></div>
+  </form>
   <div class="foot">Belum punya akun? <a href="/daftar">Daftar di sini</a></div>
+  <div class="foot" style="margin-top:8px"><a href="/privasi" style="color:var(--muted)">Kebijakan Privasi &amp; Ketentuan</a></div>
 </div>
 <script>
   const SUPA_URL='https://stxahqcdmrzxopcqeyya.supabase.co';
@@ -65,14 +74,45 @@
     try{ const {data,error}=await sb.from('allowed_emails').select('email').limit(1); if(!error && data && data.length) return true; }catch(e){}
     return false; }
 
-  // sudah login -> cek whitelist lalu masuk app
-  sb.auth.getSession().then(async function(r){
+  // deteksi link reset password (dari email) -> tampilkan form password baru, jangan langsung masuk
+  const _recovering=(location.hash||'').indexOf('type=recovery')>=0;
+  function showReset(){ document.getElementById('f').style.display='none';
+    document.getElementById('resetForm').style.display='block';
+    document.querySelector('h1').textContent='Atur Password Baru'; }
+  if(_recovering) showReset();
+  sb.auth.onAuthStateChange(function(ev){ if(ev==='PASSWORD_RECOVERY') showReset(); });
+
+  // sudah login -> cek whitelist lalu masuk app (kecuali sedang reset password)
+  if(!_recovering) sb.auth.getSession().then(async function(r){
     if(r && r.data && r.data.session){
+      if((location.hash||'').indexOf('type=recovery')>=0) return;
       const ok=await isAllowed();
       if(!ok){ await sb.auth.signOut(); showMsg('Email ini belum terdaftar sebagai pembeli. Hubungi admin (WA 0851-7156-7692).',false); return; }
       location.replace('/');
     }
   });
+
+  document.getElementById('forgotLink').onclick=async function(e){
+    e.preventDefault();
+    const email=(document.getElementById('email').value||'').trim();
+    if(!email){ showMsg('Isi email dulu di kolom Email, lalu klik "Lupa password?" lagi.',false); return; }
+    const {error}=await sb.auth.resetPasswordForEmail(email,{ redirectTo: location.origin+'/login' });
+    if(error){ showMsg('Gagal kirim email reset: '+error.message,false); return; }
+    showMsg('Link reset password sudah dikirim ke '+email+'. Cek inbox/spam ya.',true);
+  };
+
+  async function doReset(e){
+    e.preventDefault();
+    const np=document.getElementById('newPass').value;
+    const rm=document.getElementById('rmsg');
+    if(!np||np.length<6){ rm.style.display='block';rm.textContent='Password minimal 6 karakter.';rm.style.color='var(--red)';rm.style.background='rgba(220,38,38,.1)'; return false; }
+    const btn=document.getElementById('resetBtn'); btn.disabled=true; btn.textContent='Menyimpan...';
+    const {error}=await sb.auth.updateUser({ password: np });
+    if(error){ rm.style.display='block';rm.textContent='Gagal: '+error.message;rm.style.color='var(--red)';rm.style.background='rgba(220,38,38,.1)'; btn.disabled=false; btn.textContent='Simpan Password Baru'; return false; }
+    rm.style.display='block';rm.textContent='Password diperbarui! Membuka aplikasi...';rm.style.color='var(--green)';rm.style.background='rgba(22,163,74,.1)';
+    setTimeout(()=>location.replace('/'),1000);
+    return false;
+  }
 
   async function doLogin(e){
     e.preventDefault();
