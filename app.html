@@ -383,7 +383,8 @@
   .greet b{color:var(--txt)}
   /* swipe to action (mobile) */
   .titem[data-swid]{position:relative;overflow:hidden}
-  .sw-hint{position:absolute;top:3px;bottom:3px;width:92px;display:flex;align-items:center;justify-content:center;font-size:21px;z-index:0}
+  .sw-hint{position:absolute;top:0;height:60px;width:92px;display:none;align-items:center;justify-content:center;font-size:21px;z-index:0}
+  .titem.sw-ing .sw-hint{display:flex}
   .sw-edit{left:0;background:var(--gold);color:#1a1408}
   .sw-del{right:0;background:var(--red);color:#fff}
   .titem[data-swid] .row{position:relative;z-index:1;background:var(--card)}
@@ -1415,19 +1416,21 @@ window.swipeEdit=id=>{const t=data.find(x=>x.id===id);if(!t)return;
   document.addEventListener('touchstart',e=>{
     if(window.innerWidth>=1000)return;
     const it=e.target.closest('.titem[data-swid]');if(!it)return;
+    if(it.classList.contains('open'))return; // sedang lihat detail -> jangan swipe
     if(document.querySelector('.overlay.show'))return;
     el=it;row=it.querySelector(':scope > .row');sx=e.touches[0].clientX;sy=e.touches[0].clientY;dir=0;dx=0;
     it.classList.remove('sw-anim');},{passive:true});
   document.addEventListener('touchmove',e=>{
     if(!el)return;const cx=e.touches[0].clientX,cy=e.touches[0].clientY,ddx=cx-sx,ddy=cy-sy;
-    if(dir===0){if(Math.abs(ddx)>8||Math.abs(ddy)>8){dir=Math.abs(ddx)>Math.abs(ddy)+2?1:-1;if(dir!==1){el=null;return;}}else return;}
+    if(dir===0){if(Math.abs(ddx)>10||Math.abs(ddy)>10){dir=Math.abs(ddx)>Math.abs(ddy)+4?1:-1;if(dir!==1){el=null;return;}el.classList.add('sw-ing');}else return;}
     if(dir===1){if(e.cancelable)e.preventDefault();dx=Math.max(-104,Math.min(104,ddx));
       row.style.transform='translateX('+dx+'px)';row.style.background='var(--card)';}},{passive:false});
   function end(){if(!el){return;}const it=el,r=row,d=dx,id=Number(it.dataset.swid);
     it.classList.add('sw-anim');
+    const cleanup=()=>{it.classList.remove('sw-ing');};
     if(d<=-72){r.style.transform='translateX(-100%)';setTimeout(()=>delTx(id),150);}
-    else if(d>=72){r.style.transform='';r.style.background='';setTimeout(()=>swipeEdit(id),110);}
-    else{r.style.transform='';r.style.background='';}
+    else if(d>=72){r.style.transform='';r.style.background='';setTimeout(()=>{cleanup();swipeEdit(id);},110);}
+    else{r.style.transform='';r.style.background='';setTimeout(cleanup,220);}
     el=null;row=null;dir=0;dx=0;}
   document.addEventListener('touchend',end,{passive:true});
   document.addEventListener('touchcancel',end,{passive:true});})();
