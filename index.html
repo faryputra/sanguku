@@ -2697,9 +2697,11 @@ async function cloudFetch(){ if(!sb||!currentUser) return null;
   try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}).limit(1);
     if(r && r.data && r.data.length) return r.data[0]; }catch(e){}
   return null; }
+let _lastSyncErr='';
 async function pushCloud(){ if(!sb||!currentUser) return; try{ const ts=new Date().toISOString();
   const {error}=await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:ts},{onConflict:'user_id'});
-  if(!error) _setItem('sg_synced_at',ts); }catch(e){} }
+  if(error){ _lastSyncErr=error.message||'gagal menyimpan ke cloud'; console.warn('SanguKu sync error:',error); }
+  else { _lastSyncErr=''; _setItem('sg_synced_at',ts); } }catch(e){ _lastSyncErr=String((e&&e.message)||e); console.warn('SanguKu sync error:',e); } }
 function subscribeRealtime(){ if(!sb||!currentUser||window._sgRT) return; window._sgRT=true;
   try{ sb.channel('ud_'+currentUser.id)
     .on('postgres_changes',{event:'*',schema:'public',table:'user_data',filter:'user_id=eq.'+currentUser.id}, function(p){
@@ -2717,13 +2719,27 @@ async function afterLoginSync(){
     if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount();
       alert('Email ini belum terdaftar sebagai pembeli SanguKu.\nHubungi admin (WhatsApp 0851-7156-7692) untuk aktivasi akun.'); return; } }
   let row=await cloudFetch();
+  const prevUid=localStorage.getItem('sg_synced_uid')||'';
   const localTs=localStorage.getItem('sg_synced_at')||'';
-  const sameUser=localStorage.getItem('sg_synced_uid')===currentUser.id;
+  const sameUser=prevUid===currentUser.id;
+  const switchingAccount=prevUid && !sameUser; // sebelumnya login akun LAIN di perangkat ini
   const hasCloud=row && row.data && Object.keys(row.data).length;
-  // Ambil cloud hanya jika: akun berbeda dari data lokal, ATAU versi cloud lebih baru dari lokal.
-  if(hasCloud && (!sameUser || (row.updated_at||'')>localTs)){
-    _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload(); }
-  else { await pushCloud(); _setItem('sg_synced_uid',currentUser.id); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅'); } }
+  if(hasCloud){
+    // akun ini punya data di cloud -> muat (kecuali lokal akun yg sama & sudah lebih baru)
+    if(sameUser && localTs && (row.updated_at||'')<=localTs){
+      _setItem('sg_synced_uid',currentUser.id); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){}
+    }else{
+      _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload();
+    }
+  }else if(switchingAccount){
+    // akun baru & belum ada data di cloud -> MULAI KOSONG, jangan bawa data akun sebelumnya
+    clearLocalAppData(); _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',''); await pushCloud();
+    location.reload();
+  }else{
+    // login pertama kali dari akun yang datanya dipakai lokal -> unggah data lokal ke akun ini
+    await pushCloud(); _setItem('sg_synced_uid',currentUser.id); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅');
+  } }
+function clearLocalAppData(){ ['tx','set','acc','rec','goal','debt','cats','fav','asset','trash'].forEach(function(k){ try{localStorage.removeItem(PK(k));}catch(e){} }); }
 async function acctLogin(){ if(!sb){alert('Login butuh koneksi internet.');return;}
   const email=(document.getElementById('acEmail').value||'').trim(), pass=document.getElementById('acPass').value||'';
   if(!email||!pass){alert('Isi email & password.');return;}
@@ -2754,6 +2770,7 @@ function updateSyncBadge(){const b=document.getElementById('offlineBar');if(b)b.
 function syncStatusText(){
   if(!navigator.onLine)return '<span style="color:var(--muted)"><i class="ti ti-wifi-off"></i> Offline — tersimpan lokal</span>';
   if(!currentUser)return '';
+  if(_lastSyncErr)return '<span style="color:var(--red)"><i class="ti ti-cloud-off"></i> Gagal sinkron ke cloud — cek setup Supabase (RLS/tabel).</span>';
   const at=localStorage.getItem('sg_synced_at');
   if(!at)return '<span style="color:var(--green)"><i class="ti ti-cloud-check"></i> Tersinkron ✓</span>';
   const d=new Date(at);const t=pad2(d.getHours())+':'+pad2(d.getMinutes());
