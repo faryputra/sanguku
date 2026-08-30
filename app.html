@@ -2701,8 +2701,10 @@ async function cloudFetch(){ if(!sb||!currentUser) return null;
   try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}).limit(1);
     if(r && r.data && r.data.length) return r.data[0]; }catch(e){}
   return null; }
-// hitung jumlah transaksi dalam sebuah snapshot (untuk cegah data kosong menimpa data berisi)
-function snapTxCount(snap){ try{ const t=snap && snap[PK('tx')]; if(!t)return 0; const a=JSON.parse(t); return Array.isArray(a)?a.length:0; }catch(e){ return 0; } }
+// hitung jumlah transaksi dalam snapshot (tahan segala penamaan kunci: sg_tx / sg_p1_tx / dll)
+function snapTxCount(snap){ try{ if(!snap)return 0; let max=0;
+  Object.keys(snap).forEach(function(k){ if(/(^|_)tx$/.test(k)){ try{ const a=JSON.parse(snap[k]); if(Array.isArray(a)&&a.length>max)max=a.length; }catch(e){} } });
+  return max; }catch(e){ return 0; } }
 function localTxCount(){ return Array.isArray(data)?data.length:0; }
 let _lastSyncErr='';
 async function pushCloud(){ if(!sb||!currentUser) return; try{
