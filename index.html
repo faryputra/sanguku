@@ -1744,8 +1744,7 @@ async function pullToRefreshAction(){
   render();
   if(sb && currentUser && navigator.onLine){
     try{
-      const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle();
-      const row=r&&r.data;
+      const row=await cloudFetch();
       if(row && row.updated_at && row.updated_at>(localStorage.getItem('sg_synced_at')||'')){
         _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot()));
         cloudRestore(row.data); _setItem('sg_synced_at',row.updated_at||''); location.reload(); return;
@@ -2693,12 +2692,17 @@ localStorage.setItem=function(k,v){
 function cloudSnapshot(){ const o={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
   if(k && k.indexOf('sg_')===0 && k!=='sg_lastnotif' && k!=='sg_prelogin_backup' && k!=='sg_synced_uid' && k!=='sg_synced_at') o[k]=localStorage.getItem(k);} return o; }
 function cloudRestore(obj){ restoring=true; try{ Object.keys(obj||{}).forEach(function(k){ if(typeof obj[k]==='string') _setItem(k,obj[k]); }); } finally{ restoring=false; } }
+// baca baris cloud paling baru (tahan terhadap baris duplikat)
+async function cloudFetch(){ if(!sb||!currentUser) return null;
+  try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}).limit(1);
+    if(r && r.data && r.data.length) return r.data[0]; }catch(e){}
+  return null; }
 async function pushCloud(){ if(!sb||!currentUser) return; try{ const ts=new Date().toISOString();
-  const {error}=await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:ts});
+  const {error}=await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:ts},{onConflict:'user_id'});
   if(!error) _setItem('sg_synced_at',ts); }catch(e){} }
 function subscribeRealtime(){ if(!sb||!currentUser||window._sgRT) return; window._sgRT=true;
   try{ sb.channel('ud_'+currentUser.id)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'user_data',filter:'user_id=eq.'+currentUser.id}, function(p){
+    .on('postgres_changes',{event:'*',schema:'public',table:'user_data',filter:'user_id=eq.'+currentUser.id}, function(p){
       const nt=p && p.new && p.new.updated_at;
       if(nt && nt>(localStorage.getItem('sg_synced_at')||'')){
         if(!document.querySelector('.overlay.show')){ location.reload(); }
@@ -2712,8 +2716,7 @@ async function afterLoginSync(){
   if(GATING){ const ok=await isAllowed();
     if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount();
       alert('Email ini belum terdaftar sebagai pembeli SanguKu.\nHubungi admin (WhatsApp 0851-7156-7692) untuk aktivasi akun.'); return; } }
-  let row=null;
-  try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+  let row=await cloudFetch();
   const localTs=localStorage.getItem('sg_synced_at')||'';
   const sameUser=localStorage.getItem('sg_synced_uid')===currentUser.id;
   const hasCloud=row && row.data && Object.keys(row.data).length;
@@ -2743,7 +2746,7 @@ async function acctLogout(){
   try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} renderAccount(); }
 async function acctPull(){ if(!sb||!currentUser) return;
   if(!confirm('Tarik data terbaru dari cloud? Data di perangkat ini akan diganti versi cloud.')) return;
-  let row=null; try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+  let row=await cloudFetch();
   if(row && row.data){ _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_at',row.updated_at||''); location.reload(); }
   else alert('Belum ada data di cloud.'); }
 function updateSyncBadge(){const b=document.getElementById('offlineBar');if(b)b.classList.toggle('show',!navigator.onLine);
@@ -2784,7 +2787,7 @@ if(sb && !DEMO){
       if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount(); return; } }
       // tarik data cloud jika versi cloud lebih baru (atau perangkat baru)
       if(navigator.onLine){
-        let row=null; try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).maybeSingle(); row=r.data; }catch(e){}
+        let row=await cloudFetch();
         const localTs=localStorage.getItem('sg_synced_at')||'';
         const uidNew=localStorage.getItem('sg_synced_uid')!==currentUser.id;
         const hasCloud=row && row.data && Object.keys(row.data).length;
