@@ -2701,9 +2701,16 @@ async function cloudFetch(){ if(!sb||!currentUser) return null;
   try{ const r=await sb.from('user_data').select('data,updated_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}).limit(1);
     if(r && r.data && r.data.length) return r.data[0]; }catch(e){}
   return null; }
+// hitung jumlah transaksi dalam sebuah snapshot (untuk cegah data kosong menimpa data berisi)
+function snapTxCount(snap){ try{ const t=snap && snap[PK('tx')]; if(!t)return 0; const a=JSON.parse(t); return Array.isArray(a)?a.length:0; }catch(e){ return 0; } }
+function localTxCount(){ return Array.isArray(data)?data.length:0; }
 let _lastSyncErr='';
-async function pushCloud(){ if(!sb||!currentUser) return; try{ const ts=new Date().toISOString();
-  const {error}=await sb.from('user_data').upsert({user_id:currentUser.id,data:cloudSnapshot(),updated_at:ts},{onConflict:'user_id'});
+async function pushCloud(){ if(!sb||!currentUser) return; try{
+  const snap=cloudSnapshot();
+  // JANGAN timpa cloud yang berisi transaksi dengan data lokal kosong
+  if(snapTxCount(snap)===0){ const cur=await cloudFetch(); if(cur && snapTxCount(cur.data)>0){ _lastSyncErr=''; return; } }
+  const ts=new Date().toISOString();
+  const {error}=await sb.from('user_data').upsert({user_id:currentUser.id,data:snap,updated_at:ts},{onConflict:'user_id'});
   if(error){ _lastSyncErr=error.message||'gagal menyimpan ke cloud'; console.warn('SanguKu sync error:',error); }
   else { _lastSyncErr=''; _setItem('sg_synced_at',ts); } }catch(e){ _lastSyncErr=String((e&&e.message)||e); console.warn('SanguKu sync error:',e); } }
 function subscribeRealtime(){ if(!sb||!currentUser||window._sgRT) return; window._sgRT=true;
@@ -2727,14 +2734,20 @@ async function afterLoginSync(){
   const localTs=localStorage.getItem('sg_synced_at')||'';
   const sameUser=prevUid===currentUser.id;
   const switchingAccount=prevUid && !sameUser; // sebelumnya login akun LAIN di perangkat ini
-  const hasCloud=row && row.data && Object.keys(row.data).length;
+  const cloudTx=row?snapTxCount(row.data):0;
+  const localTx=localTxCount();
+  const hasCloud=row && row.data && Object.keys(row.data).length && cloudTx>0; // "punya data" = ada transaksi
   if(hasCloud){
-    // akun ini punya data di cloud -> muat (kecuali lokal akun yg sama & sudah lebih baru)
-    if(sameUser && localTs && (row.updated_at||'')<=localTs){
-      _setItem('sg_synced_uid',currentUser.id); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){}
+    // Muat cloud KECUALI lokal (akun sama) punya data & sudah lebih baru; JANGAN pernah timpa lokal-berisi dgn cloud-kosong
+    const cloudNewer=(row.updated_at||'')>localTs;
+    if(localTx>0 && sameUser && !cloudNewer){
+      _setItem('sg_synced_uid',currentUser.id); await pushCloud(); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){}
     }else{
       _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data); _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload();
     }
+  }else if(localTx>0){
+    // cloud kosong TAPI lokal berisi -> pertahankan lokal & unggah (perbaiki cloud yg kosong)
+    _setItem('sg_synced_uid',currentUser.id); await pushCloud(); subscribeRealtime(); renderAccount(); try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} alert('Berhasil masuk. Datamu tersimpan & tersinkron ke akun ini. ✅');
   }else if(switchingAccount){
     // akun baru & belum ada data di cloud -> MULAI KOSONG, jangan bawa data akun sebelumnya
     clearLocalAppData(); _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',''); await pushCloud();
@@ -2812,12 +2825,15 @@ if(sb && !DEMO){
         let row=await cloudFetch();
         const localTs=localStorage.getItem('sg_synced_at')||'';
         const uidNew=localStorage.getItem('sg_synced_uid')!==currentUser.id;
-        const hasCloud=row && row.data && Object.keys(row.data).length;
-        if(hasCloud && (uidNew || (row.updated_at||'')>localTs)){
+        const cloudTx=row?snapTxCount(row.data):0;
+        const localTx=localTxCount();
+        const hasCloud=row && row.data && Object.keys(row.data).length && cloudTx>0;
+        // Muat cloud hanya kalau cloud BERISI, dan (akun baru ATAU cloud lebih baru), dan JANGAN timpa lokal-berisi dgn cloud yg lebih lama/kosong
+        if(hasCloud && (uidNew || (row.updated_at||'')>localTs) && !(localTx>0 && !uidNew && (row.updated_at||'')<=localTs)){
           _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data);
           _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload(); return;
-        } else if(!hasCloud){ await pushCloud(); _setItem('sg_synced_uid',currentUser.id); }
-        else { _setItem('sg_synced_uid',currentUser.id); if(!localTs) _setItem('sg_synced_at',row.updated_at||''); }
+        } else if(localTx>0){ await pushCloud(); _setItem('sg_synced_uid',currentUser.id); }
+        else { _setItem('sg_synced_uid',currentUser.id); if(!localTs && row) _setItem('sg_synced_at',row.updated_at||''); }
       }
       subscribeRealtime();
     }
