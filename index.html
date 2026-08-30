@@ -1927,6 +1927,10 @@ window.saveRecurEdit=id=>{const r=recurring.find(x=>x.id===id);if(!r)return;
 
 // ---------- TABS ----------
 const TABS=['home','tx','wallet','goal','debt','recur','split','report','tips','cats','profil','tools'];
+// ---------- ROUTING BERBASIS PATH (/beranda, /transaksi, dst) ----------
+const TAB_PATH={home:'/beranda',tx:'/transaksi',wallet:'/dompet',goal:'/target',debt:'/utang',recur:'/berulang',split:'/split',report:'/laporan',tips:'/saran',cats:'/kategori',profil:'/profil',tools:'/tools'};
+const PATH_TAB={};Object.keys(TAB_PATH).forEach(k=>PATH_TAB[TAB_PATH[k]]=k);
+function tabFromPath(){ let p=(location.pathname||'/').replace(/\/+$/,''); if(!p||p==='/index.html')return 'home'; return PATH_TAB[p]||'home'; }
 function showTab(name){
   if(TABS.indexOf(name)<0)name='home';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
@@ -1950,8 +1954,8 @@ function updateBnPill(){
   pill.classList.add('show');
 }
 window.addEventListener('resize',()=>requestAnimationFrame(updateBnPill));
-function navTo(name){ if(('#'+name)!==location.hash){ try{history.pushState({t:name},'','#'+name);}catch(e){} } showTab(name); }
-window.addEventListener('popstate',function(){ const n=(location.hash||'').slice(1); showTab(TABS.indexOf(n)>=0?n:'home'); });
+function navTo(name){ const path=(TAB_PATH[name]||'/beranda')+location.search; if(location.pathname!==(TAB_PATH[name]||'/beranda')){ try{history.pushState({t:name},'',path);}catch(e){} } showTab(name); }
+window.addEventListener('popstate',function(){ showTab(tabFromPath()); });
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
   if(b.classList.contains('soon')){alert('🔒 '+(b.dataset.soon||'Fitur')+' — segera hadir! Nantikan update berikutnya 😊');return;}
   navTo(b.dataset.tab);});
@@ -2822,7 +2826,7 @@ if(sb && !DEMO){
 
 if(DEMO){ try{loadSample(true);}catch(e){} document.body.classList.add('demo'); document.getElementById('demoBar').classList.add('show'); }
 fillFilters();render();updateSideExtra();applyLang();
-try{ const _h=(location.hash||'').slice(1); if(TABS.indexOf(_h)>=0 && _h!=='home') showTab(_h); }catch(e){}
+try{ const _t=tabFromPath(); if(_t!=='home') showTab(_t); }catch(e){}
 if(!DEMO){
   dailyNotif();
   const _recDue=pendingRecurring();

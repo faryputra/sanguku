@@ -1,1 +1,17 @@
-{ "cleanUrls": true }
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/beranda", "destination": "/index.html" },
+    { "source": "/transaksi", "destination": "/index.html" },
+    { "source": "/dompet", "destination": "/index.html" },
+    { "source": "/target", "destination": "/index.html" },
+    { "source": "/utang", "destination": "/index.html" },
+    { "source": "/berulang", "destination": "/index.html" },
+    { "source": "/split", "destination": "/index.html" },
+    { "source": "/laporan", "destination": "/index.html" },
+    { "source": "/saran", "destination": "/index.html" },
+    { "source": "/kategori", "destination": "/index.html" },
+    { "source": "/profil", "destination": "/index.html" },
+    { "source": "/tools", "destination": "/index.html" }
+  ]
+}
