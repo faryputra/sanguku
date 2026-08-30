@@ -2781,6 +2781,7 @@ function syncStatusText(){
   const sameDay=d.toDateString()===new Date().toDateString();
   return '<span style="color:var(--green)"><i class="ti ti-cloud-check"></i> Tersinkron ✓ · '+(sameDay?'hari ini '+t:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)+' '+t)+'</span>';}
 function renderAccount(){
+  try{renderGreet();}catch(e){}
   const initial=((currentUser&&currentUser.email)?currentUser.email[0]:'').toUpperCase();
   const nav=document.getElementById('acctNav');
   if(nav){ if(!sb){ nav.innerHTML=''; }
