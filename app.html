@@ -2720,7 +2720,10 @@ function subscribeRealtime(){ if(!sb||!currentUser||window._sgRT) return; window
     .on('postgres_changes',{event:'*',schema:'public',table:'user_data',filter:'user_id=eq.'+currentUser.id}, function(p){
       const nt=p && p.new && p.new.updated_at;
       if(nt && nt>(localStorage.getItem('sg_synced_at')||'')){
-        if(!document.querySelector('.overlay.show')){ location.reload(); }
+        if(!document.querySelector('.overlay.show')){
+          try{ const last=Number(sessionStorage.getItem('sg_rt_reload')||0); if(Date.now()-last<4000) return; sessionStorage.setItem('sg_rt_reload',String(Date.now())); }catch(e){}
+          location.reload();
+        }
       }
     }).subscribe(); }catch(e){} }
 function scheduleCloudPush(){ clearTimeout(cloudTimer); cloudTimer=setTimeout(pushCloud,2500); }
@@ -2838,8 +2841,14 @@ if(sb && !DEMO){
         if(hasCloud && (uidNew || (row.updated_at||'')>localTs) && !(localTx>0 && !uidNew && (row.updated_at||'')<=localTs)){
           _setItem('sg_prelogin_backup',JSON.stringify(cloudSnapshot())); cloudRestore(row.data);
           _setItem('sg_synced_uid',currentUser.id); _setItem('sg_synced_at',row.updated_at||''); location.reload(); return;
-        } else if(localTx>0){ await pushCloud(); _setItem('sg_synced_uid',currentUser.id); }
-        else { _setItem('sg_synced_uid',currentUser.id); if(!localTs && row) _setItem('sg_synced_at',row.updated_at||''); }
+        } else if(localTx>0 && (cloudTx===0 || (row && (row.updated_at||'') < localTs))){
+          // cloud kosong (perlu di-seed) ATAU lokal jelas lebih baru -> unggah
+          await pushCloud(); _setItem('sg_synced_uid',currentUser.id);
+        } else {
+          // sudah sinkron / cloud sama-baru -> JANGAN push (cegah loop reload antar-perangkat)
+          _setItem('sg_synced_uid',currentUser.id);
+          if(row) _setItem('sg_synced_at',row.updated_at||localTs);
+        }
       }
       subscribeRealtime();
     }
