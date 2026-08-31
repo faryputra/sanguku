@@ -2781,7 +2781,8 @@ async function acctLogout(){
   // unggah dulu perubahan terakhir ke cloud sebelum keluar (biar tidak hilang saat login lagi)
   try{ if(cloudTimer){clearTimeout(cloudTimer);cloudTimer=null;} if(sb&&currentUser){ await pushCloud(); } }catch(e){}
   if(sb){ try{ await sb.auth.signOut(); }catch(e){} } currentUser=null; window._sgRT=false;
-  try{document.getElementById('ovAcct').classList.remove('show');}catch(e){} renderAccount(); }
+  // setelah logout -> langsung ke halaman login (jangan nyangkut di app)
+  location.replace('/login'); }
 async function acctPull(){ if(!sb||!currentUser) return;
   if(!confirm('Tarik data terbaru dari cloud? Data di perangkat ini akan diganti versi cloud.')) return;
   let row=await cloudFetch();
