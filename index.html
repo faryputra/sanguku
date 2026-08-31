@@ -2819,9 +2819,13 @@ window.openAcct=function(){ renderAccount(); document.getElementById('ovAcct').c
 window.acctLogin=acctLogin;window.acctRegister=acctRegister;window.acctLogout=acctLogout;window.acctPull=acctPull;
 if(sb && !DEMO){
   sb.auth.getSession().then(async function(res){
+    if(!(res && res.data && res.data.session)){
+      // WAJIB login sebelum masuk aplikasi
+      location.replace('/login'); return;
+    }
     if(res && res.data && res.data.session){
       currentUser=res.data.session.user;
-      if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} currentUser=null; renderAccount(); return; } }
+      if(GATING && navigator.onLine){ const ok=await isAllowed(); if(!ok){ try{await sb.auth.signOut();}catch(e){} location.replace('/login'); return; } }
       // tarik data cloud jika versi cloud lebih baru (atau perangkat baru)
       if(navigator.onLine){
         let row=await cloudFetch();
