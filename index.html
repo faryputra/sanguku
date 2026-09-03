@@ -1195,6 +1195,8 @@ const accBalance=id=>{const a=accounts.find(x=>x.id===id);let b=a?a.start:0;
     if(t.type==='tf'){if(t.from===id)b-=t.amt+(t.fee||0);if(t.to===id)b+=t.amt;}
     else if(t.type==='debt'){if(t.acc===id)b+=(t.dir==='in'?t.amt:-t.amt);}
     else if(t.type==='wd'){if(t.acc===id)b+=t.amt;}
+    else if(t.type==='asell'){if(t.acc===id)b+=t.amt;}
+    else if(t.type==='abuy'){if(t.acc===id)b-=t.amt;}
     else if(t.acc===id)b+=(t.type==='in'?t.amt:-t.amt);
   });return b;};
 const totalBalance=()=>accounts.reduce((s,a)=>s+accBalance(a.id),0);
@@ -1432,6 +1434,20 @@ function txRowHTML(t,withAcc){
     const det=dline('Dari dompet',accName(t.acc))+dline('Ke target',g?g.name:'-')+dline('Waktu',tlabel(t))+
       `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
     return titemHTML(row,det,false,t.id);}
+  if(t.type==='abuy'){const a=assets.find(x=>x.id===t.asset);
+    const row=`<div class="ico" style="background:var(--gold)"><i class="ti ti-diamond"></i></div>
+    <div class="meta"><div class="n">Beli aset${a?': '+a.name:''}</div><div class="d">dari ${accName(t.acc)} · ${tlabel(t)}</div></div>
+    <div class="amt out">−${rp(t.amt)}</div>`;
+    const det=dline('Dari dompet',accName(t.acc))+dline('Ke aset',a?a.name:'-')+dline('Waktu',tlabel(t))+
+      `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
+    return titemHTML(row,det,false,t.id);}
+  if(t.type==='asell'){const a=assets.find(x=>x.id===t.asset);
+    const row=`<div class="ico" style="background:#4ade80;color:#fff"><i class="ti ti-arrow-back-up"></i></div>
+    <div class="meta"><div class="n">Tarik aset${a?': '+a.name:''}</div><div class="d">ke ${accName(t.acc)} · ${tlabel(t)}</div></div>
+    <div class="amt ${t.acc==='none'?'':'in'}">${t.acc==='none'?'':'+'}${rp(t.amt)}</div>`;
+    const det=dline('Dari aset',a?a.name:'-')+dline('Ke dompet',accName(t.acc))+dline('Waktu',tlabel(t))+
+      `<div class="dbtns"><button class="dbtn del" onclick="event.stopPropagation();delTx(${t.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
+    return titemHTML(row,det,false,t.id);}
   const c=catInfo(t.type,t.cat);
   const row=`<div class="ico" style="background:${c.c};color:#fff">${catIcon(c.e)}</div>
     ${t.photo?`<img class="thumb" src="${t.photo}">`:''}
@@ -1488,14 +1504,21 @@ function renderWallets(){
 }
 const ASSET_TYPES={emas:'Emas',saham:'Saham',reksadana:'Reksadana',crypto:'Kripto',properti:'Properti',deposito:'Deposito',lain:'Lainnya'};
 const ASSET_ICON={emas:'ti-coin',saham:'ti-chart-line',reksadana:'ti-chart-pie',crypto:'ti-currency-bitcoin',properti:'ti-home',deposito:'ti-building-bank',lain:'ti-diamond'};
+const assetContrib=id=>data.reduce((s,t)=>s+(t.asset===id?(t.type==='abuy'?t.amt:t.type==='asell'?-t.amt:0):0),0);
 function renderAssets(){const el=document.getElementById('assetList');if(!el)return;
   const tl=document.getElementById('assetTotalLine');if(tl)tl.innerHTML=assets.length?`Total aset: <b style="color:var(--gold)">${rp(assetsTotal())}</b>`:'';
   el.innerHTML=assets.length?assets.map(a=>{const ic=ASSET_ICON[a.type]||'ti-diamond';
+    const val=Number(a.value)||0, contrib=assetContrib(a.id), gain=val-contrib;
     const row=`<div class="ico" style="background:var(--card2);color:var(--gold)"><i class="ti ${ic}"></i></div>
       <div class="meta"><div class="n">${a.name}</div><div class="d">${ASSET_TYPES[a.type]||a.type}${a.note?' · '+a.note:''}</div></div>
-      <div class="amt">${rp(a.value)}</div>`;
-    const det=dline('Jenis',ASSET_TYPES[a.type]||a.type)+dline('Nilai',rp(a.value))+(a.note?dnote('Catatan',a.note):'')+
-      `<div class="dbtns"><button class="dbtn edit" onclick="event.stopPropagation();editAsset(${a.id})"><i class="ti ti-edit"></i> Ubah</button>
+      <div class="amt">${rp(val)}</div>`;
+    const det=dline('Jenis',ASSET_TYPES[a.type]||a.type)+dline('Nilai sekarang',rp(val))+
+      (contrib>0?dline('Modal dari dompet',rp(contrib))+dline('Untung/Rugi',`<span style="color:${gain>=0?'var(--green)':'var(--red)'}">${gain>=0?'+':'−'}${rp(Math.abs(gain))}</span>`):'')+
+      (a.note?dnote('Catatan',a.note):'')+
+      `<div class="dbtns"><button class="dbtn" onclick="event.stopPropagation();assetAdd(${a.id})"><i class="ti ti-wallet"></i> Tambah dari dompet</button>
+      ${val>0?`<button class="dbtn" onclick="event.stopPropagation();assetSell(${a.id})"><i class="ti ti-arrow-back-up"></i> Tarik ke dompet</button>`:''}
+      <button class="dbtn" onclick="event.stopPropagation();assetReval(${a.id})"><i class="ti ti-refresh"></i> Perbarui nilai</button>
+      <button class="dbtn edit" onclick="event.stopPropagation();editAsset(${a.id})"><i class="ti ti-edit"></i> Ubah</button>
       <button class="dbtn del" onclick="event.stopPropagation();delAsset(${a.id})"><i class="ti ti-trash"></i> Hapus</button></div>`;
     return `<div class="card" style="margin-bottom:10px;padding:2px 14px">${titemHTML(row,det)}</div>`;}).join('')
     :es('ti ti-diamond','Belum ada aset. Catat emas, saham, reksadana, atau properti untuk kekayaan bersih yang lebih lengkap.');}
@@ -1504,15 +1527,56 @@ window.editAsset=id=>assetForm(assets.find(a=>a.id===id));
 function assetForm(a){openGen(`<h3>${a?'Ubah':'Tambah'} Aset</h3>
   <label>Nama aset</label><input id="asName" placeholder="mis. Emas Antam 5gr" value="${a?(a.name||'').replace(/"/g,'&quot;'):''}">
   <label>Jenis</label><select id="asType">${Object.keys(ASSET_TYPES).map(k=>`<option value="${k}" ${a&&a.type===k?'selected':''}>${ASSET_TYPES[k]}</option>`).join('')}</select>
-  <label>Nilai sekarang (Rp)</label><input id="asValue" data-money type="tel" inputmode="numeric" value="${a?Number(a.value||0).toLocaleString('id-ID'):''}" placeholder="0">
-  <label>Catatan (opsional)</label><input id="asNote" placeholder="mis. beli 2024" value="${a?(a.note||'').replace(/"/g,'&quot;'):''}">
+  ${a?'':`<label>Nilai awal (Rp)</label><input id="asValue" data-money type="tel" inputmode="numeric" placeholder="0">
+  <div class="small" style="margin:6px 0 0">Untuk aset yang sudah kamu miliki. Ini <b>tidak</b> memotong saldo dompet. Kalau mau beli aset dari dompet, isi 0 lalu pakai "Tambah dari dompet".</div>`}
+  <label style="margin-top:14px">Catatan (opsional)</label><input id="asNote" placeholder="mis. beli 2024" value="${a?(a.note||'').replace(/"/g,'&quot;'):''}">
   <button class="save-btn" onclick="saveAsset(${a?a.id:0})">Simpan</button>`);}
-window.saveAsset=id=>{const name=document.getElementById('asName').value.trim();const value=Number(document.getElementById('asValue').value.replace(/\D/g,''))||0;
+window.saveAsset=id=>{const name=document.getElementById('asName').value.trim();
   if(!name){alert('Isi nama aset.');return;}
-  const obj={type:document.getElementById('asType').value,name,value,note:document.getElementById('asNote').value.trim()};
-  if(id){const a=assets.find(x=>x.id===id);if(a)Object.assign(a,obj);}else assets.push(Object.assign({id:Date.now()},obj));
+  if(id){const a=assets.find(x=>x.id===id);if(a){a.name=name;a.type=document.getElementById('asType').value;a.note=document.getElementById('asNote').value.trim();}}
+  else{const value=Number(document.getElementById('asValue').value.replace(/\D/g,''))||0;
+    assets.push({id:Date.now(),type:document.getElementById('asType').value,name,value,note:document.getElementById('asNote').value.trim()});}
   saveAssets();ovGen.classList.remove('show');render();};
-window.delAsset=id=>{if(confirm('Hapus aset ini?')){assets=assets.filter(a=>a.id!==id);saveAssets();render();}};
+window.delAsset=id=>{const a=assets.find(x=>x.id===id);const c=assetContrib(id);
+  if(confirm('Hapus aset ini?'+(c>0?' Modal '+rp(c)+' yang berasal dari dompet akan dikembalikan ke saldo dompet.':''))){
+    data=data.filter(t=>!((t.type==='abuy'||t.type==='asell')&&t.asset===id));
+    assets=assets.filter(x=>x.id!==id);saveAll();render();}};
+window.assetAdd=id=>{const a=assets.find(x=>x.id===id);if(!a)return;
+  if(!accounts.length){alert('Belum ada dompet. Tambah dompet dulu.');return;}
+  openGen(`<h3>Tambah ke Aset dari Dompet</h3>
+  <div class="small" style="margin-bottom:10px">Aset: <b>${a.name}</b></div>
+  <label>Jumlah (Rp)</label><input id="asAddAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+  <label>Ambil dari dompet</label><select id="asAddAcc">${accounts.map(x=>`<option value="${x.id}">${WTYPE[x.type]||''} ${x.name} (${rp(accBalance(x.id))})</option>`).join('')}</select>
+  <button class="save-btn" onclick="saveAssetAdd(${id})">Tambah ke Aset</button>
+  <div class="small" style="margin-top:8px">Saldo dompet berkurang, nilai aset bertambah.</div>`);};
+window.saveAssetAdd=id=>{const a=assets.find(x=>x.id===id);if(!a)return;
+  const n=Number(document.getElementById('asAddAmt').value.replace(/\D/g,''));if(!n)return;
+  const acc=Number(document.getElementById('asAddAcc').value);const d=new Date();
+  a.value=(Number(a.value)||0)+n;
+  data.push({id:Date.now(),type:'abuy',asset:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
+  saveAll();ovGen.classList.remove('show');render();showSaved();};
+window.assetSell=id=>{const a=assets.find(x=>x.id===id);if(!a)return;const val=Number(a.value)||0;
+  openGen(`<h3>Tarik Aset ke Dompet</h3>
+  <div class="small" style="margin-bottom:10px">Nilai "${a.name}": <b>${rp(val)}</b></div>
+  <label>Jumlah (Rp)</label><input id="asSellAmt" data-money type="tel" inputmode="numeric" placeholder="0">
+  <label>Masuk ke dompet</label><select id="asSellAcc">${accounts.map(x=>`<option value="${x.id}">${WTYPE[x.type]||''} ${x.name} (${rp(accBalance(x.id))})</option>`).join('')}<option value="none">— Tidak masuk dompet manapun —</option></select>
+  <button class="save-btn" onclick="saveAssetSell(${id})">Tarik ke Dompet</button>
+  <div class="small" style="margin-top:8px">Nilai aset berkurang. Kalau pilih dompet, saldo dompet bertambah (mis. hasil jual).</div>`);};
+window.saveAssetSell=id=>{const a=assets.find(x=>x.id===id);if(!a)return;
+  let n=Number(document.getElementById('asSellAmt').value.replace(/\D/g,''));if(!n)return;n=Math.min(n,Number(a.value)||0);
+  const accRaw=document.getElementById('asSellAcc').value;const acc=accRaw==='none'?'none':Number(accRaw);const d=new Date();
+  a.value=(Number(a.value)||0)-n;
+  data.push({id:Date.now(),type:'asell',asset:id,acc,amt:n,date:d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3),time:hhmm(d),ts:d.getTime(),month:mkey(d)});
+  saveAll();ovGen.classList.remove('show');render();showSaved();};
+window.assetReval=id=>{const a=assets.find(x=>x.id===id);if(!a)return;
+  openGen(`<h3>Perbarui Nilai Aset</h3>
+  <div class="small" style="margin-bottom:10px">Nilai sekarang "${a.name}": <b>${rp(Number(a.value)||0)}</b></div>
+  <label>Nilai baru (Rp)</label><input id="asRevAmt" data-money type="tel" inputmode="numeric" value="${Number(a.value||0).toLocaleString('id-ID')}" placeholder="0">
+  <button class="save-btn" onclick="saveAssetReval(${id})">Perbarui</button>
+  <div class="small" style="margin-top:8px">Untuk naik/turun harga pasar (emas, saham, dll). <b>Tidak</b> memengaruhi saldo dompet.</div>`);};
+window.saveAssetReval=id=>{const a=assets.find(x=>x.id===id);if(!a)return;
+  a.value=Number(document.getElementById('asRevAmt').value.replace(/\D/g,''))||0;
+  saveAssets();ovGen.classList.remove('show');render();showSaved();};
 function renderGoals(){
   const html=goals.map(g=>{const pct=g.target?Math.min(100,Math.round(g.saved/g.target*100)):0;
     if(pct>=100&&!_celebGoals.has(g.id)){_celebGoals.add(g.id);setTimeout(confettiFromCenter,150);}
@@ -1784,6 +1848,8 @@ window.toggleDetail=el=>{const item=el.closest('.titem');if(!item)return;
 window.delTx=id=>{const t=data.find(x=>x.id===id);if(!t)return;
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
   if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved+=t.amt;}
+  if(t.type==='abuy'){const a=assets.find(x=>x.id===t.asset);if(a)a.value=Math.max(0,(Number(a.value)||0)-t.amt);}
+  if(t.type==='asell'){const a=assets.find(x=>x.id===t.asset);if(a)a.value=(Number(a.value)||0)+t.amt;}
   if(t.type==='debt'&&t.debtId&&!t.origin){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=Math.max(0,(d.paidAmt||0)-t.amt);d.paid=d.paidAmt>=d.amt;}}
   lastDeleted=t;data=data.filter(x=>x.id!==id);
   trash.unshift(Object.assign({},t,{_delAt:Date.now()}));purgeTrash();saveTrash();
@@ -1792,10 +1858,12 @@ function purgeTrash(){const cut=Date.now()-30*864e5;trash=trash.filter(x=>(x._de
 function reapplyEffects(t){
   if(t.type==='sav'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved+=t.amt;}
   if(t.type==='wd'){const g=goals.find(x=>x.id===t.goal);if(g)g.saved=Math.max(0,g.saved-t.amt);}
+  if(t.type==='abuy'){const a=assets.find(x=>x.id===t.asset);if(a)a.value=(Number(a.value)||0)+t.amt;}
+  if(t.type==='asell'){const a=assets.find(x=>x.id===t.asset);if(a)a.value=Math.max(0,(Number(a.value)||0)-t.amt);}
   if(t.type==='debt'&&t.debtId&&!t.origin){const d=debts.find(x=>x.id===t.debtId);if(d){d.paidAmt=(d.paidAmt||0)+t.amt;if(d.paidAmt>=d.amt){d.paidAmt=d.amt;d.paid=true;}}}}
 window.openTrash=()=>{try{ovSet.classList.remove('show');}catch(e){}purgeTrash();saveTrash();
   const list=trash.length?trash.map(t=>{const c=(t.type==='in'||t.type==='out')?catInfo(t.type,t.cat):null;
-    const label=c?(t.note||c.n):(t.type==='tf'?'Transfer':t.type==='sav'?'Nabung':t.type==='wd'?'Tarik tabungan':'Transaksi');
+    const label=c?(t.note||c.n):(t.type==='tf'?'Transfer':t.type==='sav'?'Nabung':t.type==='wd'?'Tarik tabungan':t.type==='abuy'?'Beli aset':t.type==='asell'?'Tarik aset':'Transaksi');
     const amt=(t.type==='in'?'+':t.type==='out'?'−':'')+rp(t.amt);
     return `<div class="row" style="border-bottom:1px solid var(--line)"><div class="meta"><div class="n">${label}</div><div class="d">${t.date||''} · dihapus ${new Date(t._delAt).toLocaleDateString('id-ID')}</div></div>
       <div style="display:flex;gap:6px;flex-shrink:0"><button class="dbtn edit" style="flex:0 0 auto;padding:7px 10px" onclick="restoreTrash(${t.id})">Pulihkan</button><button class="dbtn del" style="flex:0 0 auto;padding:7px 10px" onclick="purgeOne(${t.id})"><i class="ti ti-trash"></i></button></div></div>`;}).join('')
