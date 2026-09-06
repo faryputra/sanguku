@@ -749,6 +749,9 @@
     <h3 id="txTitle">Catat Transaksi</h3>
     <div class="fav-row" id="favRow"></div>
     <div class="seg"><button id="segOut" class="active out">Pengeluaran</button><button id="segIn">Pemasukan</button></div>
+    <button class="ghost-btn" id="scanBtn" style="margin:10px 0 2px"><i class="ti ti-camera"></i> Scan struk (isi otomatis)</button>
+    <input type="file" id="scanInput" accept="image/*" capture="environment" style="display:none">
+    <div id="scanMsg" class="small" style="margin-bottom:4px"></div>
     <label style="display:flex;justify-content:space-between;align-items:center">Nominal <span class="link" id="calcToggle"><i class="ti ti-calculator"></i> Kalkulator</span></label>
     <input type="tel" id="amtInput" placeholder="0" inputmode="numeric">
     <div class="calc-expr" id="calcExpr"></div>
@@ -2158,11 +2161,58 @@ document.getElementById('segIn').onclick=()=>setType('in');
 document.getElementById('photoInput').onchange=e=>{const f=e.target.files[0];if(!f)return;
   if(f.size>2_000_000){alert('Foto terlalu besar (maks ~2MB).');e.target.value='';return;}
   const r=new FileReader();r.onload=()=>{curPhoto=r.result;document.getElementById('photoPrev').innerHTML=`<img class="thumb" src="${curPhoto}" style="width:64px;height:64px;margin-bottom:10px">`;};r.readAsDataURL(f);};
+
+/* ===== Scan struk (OCR di HP, gratis & offline via Tesseract.js) ===== */
+function _scanMsg(html,color){const el=document.getElementById('scanMsg');if(el){el.innerHTML=html;el.style.color=color||'var(--muted)';}}
+function _loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();
+  const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  s.onload=()=>res();s.onerror=()=>rej(new Error('gagal memuat OCR'));document.head.appendChild(s);});}
+function _downscale(file,maxDim,q){return new Promise(res=>{const img=new Image();const u=URL.createObjectURL(file);
+  img.onload=()=>{let{width:w,height:h}=img;const sc=Math.min(1,maxDim/Math.max(w,h));w=Math.round(w*sc);h=Math.round(h*sc);
+    const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+    URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',q||0.7));};
+  img.onerror=()=>{URL.revokeObjectURL(u);res('');};img.src=u;});}
+function _parseRupiah(str){let s=String(str).replace(/[^0-9.,]/g,'');if(!s)return 0;
+  const lastDot=s.lastIndexOf('.'),lastComma=s.lastIndexOf(',');let dec=-1;
+  if(lastDot>=0&&lastComma>=0)dec=Math.max(lastDot,lastComma);
+  else if(lastComma>=0){if(s.length-lastComma-1===2)dec=lastComma;}
+  else if(lastDot>=0){if(s.length-lastDot-1===2)dec=lastDot;}
+  let intpart=dec>=0?s.slice(0,dec):s;intpart=intpart.replace(/[.,]/g,'');return Number(intpart)||0;}
+function _numsIn(line){const m=line.match(/[0-9][0-9.,]{2,}/g)||[];return m.map(_parseRupiah).filter(v=>v>=100&&v<1e11);}
+function _extractAmount(text){const lines=text.split(/\r?\n/);
+  const kw=[/grand\s*total/i,/total\s*(belanja|bayar|akhir|harga)?/i,/jumlah/i,/tagihan/i,/subtotal/i,/bayar|tunai|cash/i];
+  for(const k of kw){let best=0;lines.forEach((ln,i)=>{if(k.test(ln)){let c=_numsIn(ln);if(!c.length&&lines[i+1])c=_numsIn(lines[i+1]);if(c.length)best=Math.max(best,Math.max.apply(null,c));}});if(best>0)return best;}
+  let all=[];lines.forEach(ln=>{all=all.concat(_numsIn(ln));});return all.length?Math.max.apply(null,all):0;}
+function _extractDate(text){const m=text.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);if(!m)return '';
+  let d=+m[1],mo=+m[2],y=+m[3];if(y<100)y+=2000;if(d<1||d>31||mo<1||mo>12||y<2015||y>2100)return '';
+  return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+document.getElementById('scanBtn').onclick=()=>document.getElementById('scanInput').click();
+document.getElementById('scanInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  const btn=document.getElementById('scanBtn');const orig=btn.innerHTML;btn.disabled=true;
+  _scanMsg('<i class="ti ti-loader"></i> Menyiapkan…');
+  try{
+    // simpan foto (dikecilkan) sekalian sebagai lampiran
+    _downscale(f,1000,0.7).then(d=>{if(d){curPhoto=d;document.getElementById('photoPrev').innerHTML=`<img class="thumb" src="${d}" style="width:64px;height:64px;margin-bottom:10px">`;}});
+    btn.innerHTML='<i class="ti ti-loader"></i> Memuat OCR…';
+    await _loadTesseract();
+    const res=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status==='recognizing text')_scanMsg('Membaca struk… '+Math.round(m.progress*100)+'%');}});
+    const text=(res&&res.data&&res.data.text)||'';
+    const amt=_extractAmount(text),dt=_extractDate(text);
+    if(amt){document.getElementById('amtInput').value=amt.toLocaleString('id-ID');}
+    if(dt){document.getElementById('dateInput').value=dt;}
+    const ni=document.getElementById('noteInput');
+    if(!ni.value){const first=(text.split(/\r?\n/).map(s=>s.trim()).filter(s=>s.length>2&&/[a-zA-Z]/.test(s))[0]||'').slice(0,30);if(first)ni.value=first;}
+    if(amt)_scanMsg('✓ Terbaca: <b>Rp'+amt.toLocaleString('id-ID')+'</b>'+(dt?' · '+dt:'')+' — cek lalu Simpan.','var(--green)');
+    else _scanMsg('Nominal tak terbaca. Foto lebih jelas / isi manual ya.','var(--red)');
+  }catch(err){_scanMsg('Gagal baca struk ('+(err&&err.message||'error')+'). Isi manual ya.','var(--red)');}
+  btn.disabled=false;btn.innerHTML=orig;e.target.value='';};
+
 document.getElementById('fab').onclick=()=>{
   editId=null;document.getElementById('txTitle').textContent='Catat Transaksi';document.getElementById('saveBtn').textContent='Simpan';
   document.getElementById('amtInput').value='';document.getElementById('noteInput').value='';document.getElementById('tagInput').value='';
   document.getElementById('dateInput').value=new Date().toISOString().slice(0,10);
   document.getElementById('photoInput').value='';document.getElementById('photoPrev').innerHTML='';curPhoto='';
+  _scanMsg('');
   resetCalc();document.getElementById('calcRow').classList.remove('show');
   _catManual=false;
   fillAccSelect(document.getElementById('accInput'));setType('out');renderFavs();ovTx.classList.add('show');};
