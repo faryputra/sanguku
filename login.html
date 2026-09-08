@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Masuk — SanguKu</title>
-<meta name="theme-color" content="#f5f6f2">
+<meta name="theme-color" content="#0d0f13">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
-  :root{--bg:#f5f6f2;--bg2:#ffffff;--card:#ffffff;--card2:#eef1f7;--line:#e5e7e0;--txt:#16181d;--muted:#6b7280;--gold:#c89b3f;--gold2:#b5892f;--goldl:#e6c068;--red:#dc2626;--green:#16a34a}
+  :root{--bg:#0d0f13;--bg2:#171a20;--card:#171a20;--card2:#242a33;--line:#282d36;--txt:#f2f0ea;--muted:#9aa1ac;--gold:#d9a441;--gold2:#e9c06a;--goldl:#f4cf6e;--red:#f87171;--green:#34d399}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Sora',system-ui,sans-serif;background:radial-gradient(700px 380px at 50% -8%,rgba(230,192,104,.18),transparent 62%),var(--bg);
     color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;-webkit-font-smoothing:antialiased}
@@ -34,6 +34,17 @@
     background:var(--bg);color:var(--txt);display:flex;align-items:center;justify-content:center;gap:10px;transition:.15s}
   .gbtn:hover{border-color:var(--gold)}
   .gbtn:disabled{opacity:.6;cursor:not-allowed}
+  /* Popup Privasi */
+  .pv-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center;padding:18px}
+  .pv-ov.show{display:flex}
+  .pv-box{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;max-width:520px;width:100%;max-height:85vh;overflow:auto;padding:26px 24px}
+  .pv-box h2{font-size:18px;font-weight:800;padding-right:26px}
+  .pv-box .eff{color:var(--muted);font-size:12px;margin-bottom:14px}
+  .pv-box h3{font-size:14px;font-weight:700;margin:15px 0 4px;color:var(--txt)}
+  .pv-box p{font-size:13px;color:var(--muted);line-height:1.6}
+  .pv-box ul{margin:6px 0 6px 18px}
+  .pv-box li{font-size:13px;color:var(--muted);line-height:1.55}
+  .pv-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
 </style>
 </head>
 <body>
@@ -57,8 +68,37 @@
     <button class="btn" type="submit" id="resetBtn">Simpan Password Baru</button>
     <div class="msg" id="rmsg"></div>
   </form>
-  <div class="foot">Belum punya akun? <a href="/daftar">Daftar di sini</a></div>
-  <div class="foot" style="margin-top:8px"><a href="/privasi" style="color:var(--muted)">Kebijakan Privasi &amp; Ketentuan</a></div>
+  <div class="foot">Belum punya akun? <a href="https://lynk.id/luardigital/wrnog139kno8/checkout">Daftar di sini</a></div>
+  <div class="foot" style="margin-top:8px"><a href="#" onclick="document.getElementById('pvOv').classList.add('show');return false;" style="color:var(--muted)">Kebijakan Privasi &amp; Ketentuan</a></div>
+</div>
+
+<!-- Popup Kebijakan Privasi & Ketentuan -->
+<div class="pv-ov" id="pvOv" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="pv-box">
+    <button class="pv-close" onclick="document.getElementById('pvOv').classList.remove('show')" aria-label="Tutup">&times;</button>
+    <h2>Kebijakan Privasi &amp; Ketentuan Layanan</h2>
+    <div class="eff">Berlaku efektif: Agustus 2026</div>
+    <p>SanguKu adalah aplikasi pencatat keuangan pribadi. Dengan mendaftar dan menggunakan SanguKu, kamu menyetujui kebijakan privasi dan ketentuan layanan di bawah ini.</p>
+    <h3>1. Data yang Kami Kumpulkan</h3>
+    <p>Untuk membuat akun dan menyinkronkan data, kami menyimpan:</p>
+    <ul><li>Alamat email dan nomor WhatsApp yang kamu berikan saat mendaftar.</li>
+    <li>Data keuangan yang kamu catat sendiri (transaksi, dompet, target, utang/piutang, kategori, pengaturan).</li></ul>
+    <p>Kami tidak pernah meminta atau menyimpan nomor kartu, PIN, atau kredensial rekening bankmu.</p>
+    <h3>2. Bagaimana Data Digunakan</h3>
+    <p>Data kamu digunakan semata-mata untuk menjalankan aplikasi: menampilkan catatan, menyinkronkan antar perangkatmu, dan mengirim pengingat yang kamu aktifkan. Kami tidak menjual, menyewakan, atau membagikan datamu ke pihak ketiga untuk tujuan pemasaran.</p>
+    <h3>3. Penyimpanan &amp; Keamanan</h3>
+    <p>Data tersimpan di perangkatmu dan pada layanan cloud tepercaya (Supabase) yang terhubung ke akunmu. Akses ke datamu dilindungi oleh email dan password yang hanya kamu ketahui. Kami menyarankan menggunakan password yang kuat dan tidak membagikannya.</p>
+    <h3>4. Pembayaran</h3>
+    <p>Pembayaran lisensi diproses melalui penyedia pembayaran resmi (payment gateway) pihak ketiga. Kami tidak menyimpan detail instrumen pembayaranmu di server kami.</p>
+    <h3>5. Lisensi Penggunaan</h3>
+    <p>Pembelian SanguKu memberikan lisensi penggunaan pribadi untuk satu pengguna. Dilarang menyebarluaskan, menjual ulang, atau membagikan akses akun kepada pihak lain tanpa izin.</p>
+    <h3>6. Hak Kamu atas Data</h3>
+    <p>Kamu dapat mengekspor (backup) seluruh datamu kapan saja lewat menu Pengaturan. Untuk menghapus akun beserta datanya, hubungi kami melalui WhatsApp.</p>
+    <h3>7. Perubahan Kebijakan</h3>
+    <p>Kebijakan ini dapat diperbarui sewaktu-waktu. Perubahan penting akan kami informasikan melalui aplikasi.</p>
+    <h3>8. Kontak</h3>
+    <p>Pertanyaan seputar privasi, data, atau lisensi bisa disampaikan melalui WhatsApp admin: 0851-7156-7692.</p>
+  </div>
 </div>
 <script>
   const SUPA_URL='https://stxahqcdmrzxopcqeyya.supabase.co';
